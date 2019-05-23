@@ -9,6 +9,7 @@
   },
   "devDependencies": {
     "@types/d3": "^5.7.2",
+    "@types/d3-scale": "^2.1.1",
     "typescript": "^3.4.5"
   },
   "scripts": {

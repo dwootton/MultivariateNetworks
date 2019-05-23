@@ -16,8 +16,8 @@ text.active {
 
 <style src="styles.css"></style>
 
-<script src="/Libraries/d3.js"></script>
-<script src="/Libraries/d3_color_scale.js"></script>
+<!--<script src="/Libraries/d3.js"></script>
+<script src="/Libraries/d3_color_scale.js"></script>-->
 
 
 <!--<aside style="margin-top:80px;">-->
@@ -35,9 +35,24 @@ text.active {
 
 <p>Built with <a href="http://d3js.org/">d3.js</a>.
 </aside>
+<script>var exports = {};</script>
 
 <script>
+require = {
+    paths: {
+        "d3": "https://d3js.org/d3.v5.min"
+    },
+    shim: {
+        "d3": {
+            exports: "d3"
+        }
+    }
+};
+</script>
+<script src="http://requirejs.org/docs/release/2.1.8/comments/require.js"></script>
 
+<script src="scripts/startup.js"> </script>
+<!--
 var margin = {top: 90, right: 0, bottom: 10, left: 90},
     width = 750,
     height = 750;
@@ -152,3 +167,4 @@ d3.json("data.json").then(function(data) {
   }, 5000);
 });
 </script>
+-->
