@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var d3 = require("d3");
-var margin = { top: 90, right: 0, bottom: 10, left: 90 }, width = 750, height = 750;
+require(['d3'], function(d3) {
+var margin = { top: 35, right: 0, bottom: 10, left: 35 }, width = 600, height = 600;
 var x = d3.scaleBand().range([0, width]), z = d3.scaleLinear().domain([0, 4]).clamp(true), c = d3.scaleOrdinal(d3.schemeCategory10);
 var svg = d3.select("body").append("svg")
     .attr("width", width + margin.left + margin.right)
@@ -110,4 +110,104 @@ d3.json("data.json").then(function (data) {
         order("group");
         d3.select("#order").property("selectedIndex", 2).node().focus();
     }, 5000);
+    /* Table Data */
+    var rowHeight = 14;
+    var columns = [
+        "familyBefore",
+        "familyAfter",
+        "individualBefore",
+        "individualAfter"
+    ];
+    var sortKey = "familyBefore", sortOrder = d3.ascending;
+    var formatCurrency = d3.format("$,.0f"), formatNumber = d3.format(",.0f");
+    var x2 = d3.scaleLinear()
+        .domain([0, 1000])
+        .range([0, 140]);
+    var stateRow = d3.select(".g-table-body-states")
+        .style("height", nodes.length * rowHeight + "px")
+        .selectAll(".g-table-row")
+        .data(nodes.sort(function (a, b) {
+        return sortOrder(a[sortKey], b[sortKey]);
+    }))
+        .enter().append("div")
+        .attr("class", "g-table-row")
+        .style("top", function (d, i) {
+        return i * rowHeight + "px";
+    });
+    var tableRow = d3.selectAll(".g-table-body .g-table-row");
+    tableRow.append("div")
+        .attr("class", "g-table-cell g-table-cell-state")
+        .text(function (d) {
+        return d.state;
+    });
+    columns.forEach(function (c) {
+        tableRow.append("div")
+            .attr("class", "g-table-cell g-table-cell-" + c)
+            .append("div")
+            .datum(function (d) {
+            return d[c];
+        })
+            .attr("class", "g-table-bar")
+            .append("div")
+            .attr("class", "g-table-label")
+            .text(function (d, i) {
+            return (i ? formatNumber : formatCurrency)(d);
+        });
+    });
+    var bar = tableRow.selectAll(".g-table-bar")
+        .style("width", 0);
+    tableRow.transition()
+        .delay(function (d, i) {
+        return i * 8;
+    })
+        .selectAll(".g-table-bar")
+        .on("start", function (d) {
+        var that = this;
+        that.style.width = x2(d) + "px";
+    });
+    var columnLabel = d3.selectAll(".g-table-head .g-table-cell")
+        .datum(function () {
+        var that = this;
+        return that.getAttribute("data-key");
+    })
+        .on("click", clicked)
+        .select(".g-table-column")
+        .classed("g-table-column-" + (sortOrder === d3.ascending ? "ascending" : "descending"), function (d) {
+        return d === sortKey;
+    });
+    function clicked(key) {
+        d3.event.preventDefault();
+        columnLabel
+            .classed("g-table-column-" + (sortOrder === d3.ascending ? "ascending" : "descending"), false);
+        if (sortKey === key)
+            sortOrder = sortOrder === d3.ascending ? d3.descending : d3.ascending;
+        else
+            sortKey = key;
+        nodes
+            .sort(function (a, b) {
+            return sortOrder(a[sortKey], b[sortKey]);
+        })
+            .forEach(function (d, i) {
+            d.index = i;
+        });
+        columnLabel
+            .classed("g-table-column-" + (sortOrder === d3.ascending ? "ascending" : "descending"), function (d) {
+            return d === sortKey;
+        });
+        stateRow.transition()
+            .delay(function (d) {
+            return d.index * 8;
+        })
+            .on("start", function (d) {
+            return this.style.top = d.index * rowHeight + "px";
+        });
+    }
+    function type(d) {
+        d.familyBefore = +d.familyBefore;
+        d.familyAfter = +d.familyAfter;
+        d.individualBefore = +d.individualBefore;
+        d.individualAfter = +d.individualAfter;
+        return d;
+    }
 });
+})
