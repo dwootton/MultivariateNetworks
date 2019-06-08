@@ -9,7 +9,8 @@ var Model = /** @class */ (function () {
             _this.controller = controller;
             _this.processData();
             _this.order = _this.changeOrder('name');
-            _this.controller.updateData(_this.nodes, _this.edges);
+            console.log(_this.order);
+            _this.controller.updateData(_this.nodes, _this.edges, _this.matrix);
         });
     }
     /**
@@ -19,12 +20,14 @@ var Model = /** @class */ (function () {
      */
     Model.prototype.changeOrder = function (type) {
         var _this = this;
+        var order;
         if (type == 'name') {
-            this.order = d3.range(this.nodes.length).sort(function (a, b) { return d3.ascending(_this.nodes[a].name, _this.nodes[b].name); });
+            order = d3.range(this.nodes.length).sort(function (a, b) { return d3.ascending(_this.nodes[a].name, _this.nodes[b].name); });
         }
         else {
-            this.order = d3.range(this.nodes.length).sort(function (a, b) { return _this.nodes[b][type] - _this.nodes[a][type]; });
+            order = d3.range(this.nodes.length).sort(function (a, b) { return _this.nodes[b][type] - _this.nodes[a][type]; });
         }
+        return order;
     };
     /**
      * [processData description]
@@ -80,6 +83,7 @@ var View = /** @class */ (function () {
         this.controller = controller;
         // set up load
         this.renderLoading();
+        this.initalizeEdges();
     }
     /**
      * Takes in the data, hides the loading screen, and
@@ -87,11 +91,118 @@ var View = /** @class */ (function () {
      * @param  data [description]
      * @return      [description]
      */
-    View.prototype.loadData = function (nodes, edges) {
+    View.prototype.loadData = function (nodes, edges, matrix) {
         this.nodes = nodes;
         this.edges = edges;
+        this.matrix = matrix;
         this.hideLoading();
-        console.log('view data', nodes, edges);
+        console.log('view data', nodes, edges, matrix);
+        this.renderEdges();
+    };
+    /**
+     * Initalizes the edges view, renders SVG
+     * @return None
+     */
+    View.prototype.initalizeEdges = function () {
+        // Set up attributes
+        this.edgeSVGMargin = { top: 90, right: 0, bottom: 10, left: 90 };
+        this.edgeSVGWidth = 750;
+        this.edgeSVGHeight = 750;
+        // append SVG
+        this.edgeSVG = d3.select("body").append("svg")
+            .attr("width", this.edgeSVGWidth + this.edgeSVGMargin.left + this.edgeSVGMargin.right)
+            .attr("height", this.edgeSVGHeight + this.edgeSVGMargin.top + this.edgeSVGMargin.bottom)
+            //.style("margin-right", - this.margin.left + "px")
+            .append("g")
+            .attr("transform", "translate(" + this.edgeSVGMargin.left + "," + this.edgeSVGMargin.top + ")");
+    };
+    View.prototype.renderEdges = function () {
+        var _this = this;
+        // Set up scales
+        this.xScale = d3.scaleBand().range([0, this.edgeSVGWidth]);
+        this.edgeValueScale = d3.scaleLinear().domain([0, 4]).clamp(true);
+        this.colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+        this.orders = this.controller.getOrder();
+        console.log(this.orders);
+        this.xScale.domain(this.orders);
+        this.edgeSVG.append("rect")
+            .attr("class", "background")
+            .attr("width", this.edgeSVGWidth)
+            .attr("height", this.edgeSVGHeight);
+        var row = this.edgeSVG.selectAll(".row")
+            .data(this.matrix)
+            .enter().append("g")
+            .attr("class", "row")
+            .attr("transform", function (d, i) { return "translate(0," + _this.xScale(i) + ")"; })
+            .each(rowSelect);
+        row.append("line")
+            .attr("x2", this.edgeSVGWidth);
+        row.append("text")
+            .attr("x", -6)
+            .attr("y", this.xScale.bandwidth() / 2)
+            .attr("dy", ".32em")
+            .attr("text-anchor", "end")
+            .text(function (d, i) { return _this.nodes[i].abbr; });
+        var column = this.edgeSVG.selectAll(".column")
+            .data(this.matrix)
+            .enter().append("g")
+            .attr("class", "column")
+            .attr("transform", function (d, i) { return "translate(" + _this.xScale(i) + ")rotate(-90)"; });
+        column.append("line")
+            .attr("x1", -this.edgeSVGWidth);
+        column.append("text")
+            .attr("x", 6)
+            .attr("y", this.xScale.bandwidth() / 2)
+            .attr("dy", ".32em")
+            .attr("text-anchor", "start")
+            .text(function (d, i) { return _this.nodes[i].abbr; });
+        function rowSelect(row) {
+            var _this = this;
+            var cell = d3.select(this).selectAll(".cell")
+                .data(row.filter(function (d) { return d.z; }))
+                .enter().append("rect")
+                .attr("class", "cell")
+                .attr("x", function (d) { return _this.xScale(d.x); })
+                .attr("width", this.xScale.bandwidth())
+                .attr("height", this.xScale.bandwidth())
+                .style("fill-opacity", function (d) { return _this.edgeValueScale(d.z); })
+                .style("fill", function (d) { return _this.nodes[d.x].group == _this.nodes[d.y].group ? _this.colorScale(_this.nodes[d.x].group) : null; })
+                .on("mouseover", mouseover)
+                .on("mouseout", mouseout);
+        }
+        function mouseover(p) {
+            d3.selectAll(".row text").classed("active", function (d, i) { return i == p.y; });
+            d3.selectAll(".column text").classed("active", function (d, i) { return i == p.x; });
+        }
+        function mouseout() {
+            d3.selectAll("text").classed("active", false);
+        }
+        /* Changes order */
+        /*d3.select("#order").on("change", function() {
+          clearTimeout(timeout);
+          order(this.value);
+        });
+    
+        function order(value) {
+          x.domain(orders[value]);
+          var t = svg.transition().duration(2500);
+          t.selectAll(".row")
+            .delay(function(d, i) { return x(i) * 4; })
+            .attr("transform", function(d, i) { return "translate(0," + x(i) + ")"; })
+            .selectAll(".cell")
+            .delay(function(d) { return x(d.x) * 4; })
+            .attr("x", function(d) { return x(d.x); });
+          t.selectAll(".column")
+            .delay(function(d, i) { return x(i) * 4; })
+            .attr("transform", function(d, i) { return "translate(" + x(i) + ")rotate(-90)"; });
+        }
+        var timeout = setTimeout(function() {
+          order("group");
+          d3.select("#order").property("selectedIndex", 2).node().focus();
+        }, 5000);
+        */
+    };
+    View.prototype.renderAttributes = function () {
     };
     /**
      * Changes the current view to be a loading screen.
@@ -128,11 +239,18 @@ var Controller = /** @class */ (function () {
         this.model = new Model(this); // start reading in data
     }
     /**
-     * Updates the data
+     * Passes the processed edge and node data to the view.
+     * @return None
+     */
+    Controller.prototype.updateData = function (nodes, edges, matrix) {
+        this.view.loadData(nodes, edges, matrix);
+    };
+    /**
+     * Obtains the order from the model and returns it to the view.
      * @return [description]
      */
-    Controller.prototype.updateData = function (nodes, edges) {
-        this.view.loadData(nodes, edges);
+    Controller.prototype.getOrder = function () {
+        return this.model.getOrder();
     };
     return Controller;
 }());
