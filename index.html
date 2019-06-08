@@ -33,10 +33,83 @@
       <option value="group">by Group</option>
     </select>
 </aside>
+
+<div id="overlay">
+		<div class="spinner"></div>
+		<div id="overlay-text">Loading Content</div>
+</div>
 <div id="interactiveFreeFormMain">
   <div id="topology"> </div>
 
   <style type="text/css">
+  /* Overlay */
+  /* Spinner
+    obtained from http://jsbin.com/roqakuxebo/1/edit?html,css,output
+*/
+.spinner {
+   position: absolute;
+   left: 46%;
+   top: 30%;
+   height:120px;
+   width:120px;
+   margin:0px auto;
+   -webkit-animation: rotation .6s infinite linear;
+   -moz-animation: rotation .6s infinite linear;
+   -o-animation: rotation .6s infinite linear;
+   animation: rotation .6s infinite linear;
+   border-left:6px solid rgba(0,174,239,.15);
+   border-right:6px solid rgba(0,174,239,.15);
+   border-bottom:6px solid rgba(0,174,239,.15);
+   border-top:6px solid rgba(0,174,239,.8);
+   border-radius:100%;
+}
+
+@-webkit-keyframes rotation {
+   from {-webkit-transform: rotate(0deg);}
+   to {-webkit-transform: rotate(359deg);}
+}
+@-moz-keyframes rotation {
+   from {-moz-transform: rotate(0deg);}
+   to {-moz-transform: rotate(359deg);}
+}
+@-o-keyframes rotation {
+   from {-o-transform: rotate(0deg);}
+   to {-o-transform: rotate(359deg);}
+}
+@keyframes rotation {
+   from {transform: rotate(0deg);}
+   to {transform: rotate(359deg);}
+}
+
+/* Overlay Styles
+from: https://www.w3schools.com/howto/howto_css_overlay.asp
+*/
+
+#overlay {
+  position: fixed; /* Sit on top of the page content */
+  display: block; /* Hidden by default */
+  width: 100vw; /* Full width (cover the whole page) */
+  height: 100vh; /* Full height (cover the whole page) */
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255,255,255,0.8); /* White background with opacity */
+  z-index: 9999999999999999999999999999999999999999999999999999999; /* Specify a stack order in case you're using a different order for other elements */
+  cursor: pointer; /* Add a pointer on hover */
+}
+
+#overlay-text{
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  font-size: 50px;
+  color: black;
+  transform: translate(-50%,-50%);
+  -ms-transform: translate(-50%,-50%);
+}
+
+  /* Graphic */
   .g-graphic{
     float:right;
     width:650px;
@@ -189,6 +262,7 @@
       text-align: right;
     }
   </style>
+
   <div class="g-graphic">
     <!--
     <div class="g-instruction">

@@ -1,5 +1,5 @@
-import { Model } from "Model";
 
+// Work on importing class file
 class controller {
   /*
   The Model handels the loading, sorting, and ordering of the data.
@@ -9,7 +9,8 @@ class controller {
 
 
   constructor() {
-    this.view = new View();
-    this.model = new Model();
+    //this.view = new View(); initalize view,
+    this.model = new Model(this);
   }
+
 }
