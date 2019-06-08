@@ -1,5 +1,4 @@
-import * as d3 from 'd3';
-
+import * as d3 from 'https://unpkg.com/d3?module';
 var margin = { top: 35, right: 0, bottom: 10, left: 35 },
   width = 600,
   height = 600;
