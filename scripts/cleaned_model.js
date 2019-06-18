@@ -132,8 +132,8 @@ var View = /** @class */ (function () {
      */
     View.prototype.renderView = function () {
         this.viewWidth = 1000;
-        this.viewHeight =
-            this.margins = { left: 45, top: 55, right: 10, bottom: 10 };
+        //this.viewHeight =
+        this.margins = { left: 45, top: 55, right: 10, bottom: 10 };
         this.initalizeEdges();
         this.initalizeAttributes();
         var that = this;
@@ -277,11 +277,11 @@ var View = /** @class */ (function () {
      */
     View.prototype.initalizeAttributes = function () {
         var _this = this;
-        this.attributeWidth = 300 - this.margins.left - this.margins.right;
+        this.attributeWidth = 475 - this.margins.left - this.margins.right;
         this.attributeHeight = 600 - this.margins.top - this.margins.bottom;
         this.attributes = d3.select('#attributes').append("svg")
-            .attr("width", this.edgeWidth * 3 + this.margins.left + this.margins.right)
-            .attr("height", this.edgeHeight * 3 + this.margins.top + this.margins.bottom)
+            .attr("width", this.attributeWidth + this.margins.left + this.margins.right)
+            .attr("height", this.attributeHeight + this.margins.top + this.margins.bottom)
             .append("g")
             .attr('id', 'edgeMargin')
             .attr("transform", "translate(" + this.margins.left + "," + this.margins.top + ")");
@@ -289,6 +289,8 @@ var View = /** @class */ (function () {
             .attr("width", "100%")
             .attr("height", "100%")
             .attr("fill", "pink");
+        var barMargin = { top: 2, bottom: 1, left: 5, right: 5 };
+        var barHeight = 10 - barMargin.top - barMargin.bottom;
         // Draw each row (translating the y coordinate)
         this.attributeRows = this.attributes.selectAll(".row")
             .data(this.nodes)
@@ -297,8 +299,19 @@ var View = /** @class */ (function () {
             .attr("transform", function (d, i) {
             return "translate(0," + _this.verticalScale(i) + ")";
         });
+        // add zebras and highlight rows
+        this.attributeRows
+            .append('rect')
+            .classed('highlightRow', true)
+            .attr('x', 0)
+            .attr('y', 0)
+            .attr('width', this.attributeWidth)
+            .attr('height', this.verticalScale.bandwidth())
+            .attr('fill', function (d, i) { return i % 2 == 0 ? "#fff" : "#eee"; });
         this.attributeRows.append("line")
-            .attr("x2", this.attributeWidth);
+            .attr("x2", this.attributeWidth)
+            .attr('stroke', '2px')
+            .attr('stroke-opacity', 0.4);
         var columns = [
             "familyBefore",
             "familyAfter",
@@ -312,19 +325,17 @@ var View = /** @class */ (function () {
         this.columnScale = d3.scaleOrdinal().domain(columns);
         // Calculate Column Scale
         var columnRange = [];
-        var sum = 0;
+        var xRange = 0;
         columns.forEach(function (c) {
-            columnRange.push(sum);
+            columnRange.push(xRange);
             var value = _this.barWidthScale(d3.max(_this.nodes, function (d) { return d[c]; }));
             if (value < 100) {
                 value = 100;
             }
-            sum += value;
+            xRange += value;
         });
         console.log(columnRange);
         this.columnScale.range(columnRange);
-        var barMargin = { top: 1, bottom: 1, left: 5, right: 5 };
-        var barHeight = 10 - barMargin.top - barMargin.bottom;
         /* Create data columns data */
         columns.forEach(function (c) {
             console.log(c);
@@ -348,6 +359,18 @@ var View = /** @class */ (function () {
                 return (i ? formatNumber : formatCurrency)(d);
             });
         });
+        // Add Verticle Dividers
+        this.attributes.selectAll('.column')
+            .data(columns)
+            .enter()
+            .append('line')
+            .style('stroke', '1px')
+            .attr('x1', function (d) { return _this.columnScale(d); })
+            .attr("y1", -20)
+            .attr('x2', function (d) { return _this.columnScale(d); })
+            .attr("y2", this.attributeHeight + this.margins.bottom)
+            .attr('stroke-opacity', 0.4);
+        // Add headers
         var columnHeaders = this.attributes.append('g')
             .classed('column-headers', true);
         this.columnNames = {

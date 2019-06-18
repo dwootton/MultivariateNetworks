@@ -186,7 +186,7 @@ class View {
   renderView() {
     this.viewWidth = 1000;
 
-    this.viewHeight =
+    //this.viewHeight =
       this.margins = { left: 45, top: 55, right: 10, bottom: 10 };
 
     this.initalizeEdges();
@@ -354,18 +354,18 @@ class View {
       .delay((d, i) => { return this.verticalScale(i) * 4; })
       .attr("transform", (d, i) => { return "translate(" + this.verticalScale(i) + ")rotate(-90)"; });
   }
-  private columnNames : {};
+  private columnNames: {};
   /**
    * [initalizeAttributes description]
    * @return [description]
    */
   initalizeAttributes() {
-    this.attributeWidth = 300 - this.margins.left - this.margins.right;
+    this.attributeWidth = 475 - this.margins.left - this.margins.right;
     this.attributeHeight = 600 - this.margins.top - this.margins.bottom;
 
     this.attributes = d3.select('#attributes').append("svg")
-      .attr("width", this.edgeWidth * 3 + this.margins.left + this.margins.right)
-      .attr("height", this.edgeHeight * 3 + this.margins.top + this.margins.bottom)
+      .attr("width", this.attributeWidth + this.margins.left + this.margins.right)
+      .attr("height", this.attributeHeight + this.margins.top + this.margins.bottom)
       .append("g")
       .attr('id', 'edgeMargin')
       .attr("transform", "translate(" + this.margins.left + "," + this.margins.top + ")");
@@ -374,6 +374,8 @@ class View {
       .attr("height", "100%")
       .attr("fill", "pink");
 
+    let barMargin = { top: 2, bottom: 1, left: 5, right: 5 }
+    let barHeight = 10 - barMargin.top - barMargin.bottom;
     // Draw each row (translating the y coordinate)
     this.attributeRows = this.attributes.selectAll(".row")
       .data(this.nodes)
@@ -383,8 +385,21 @@ class View {
         return "translate(0," + this.verticalScale(i) + ")";
       });
 
+    // add zebras and highlight rows
+    this.attributeRows
+      .append('rect')
+      .classed('highlightRow',true)
+      .attr('x', 0)
+      .attr('y', 0)
+      .attr('width', this.attributeWidth)
+      .attr('height', this.verticalScale.bandwidth())
+      .attr('fill',(d,i)=>{return i%2 == 0 ? "#fff" : "#eee"})
+
+
     this.attributeRows.append("line")
-      .attr("x2", this.attributeWidth);
+      .attr("x2", this.attributeWidth)
+      .attr('stroke','2px')
+      .attr('stroke-opacity',0.4);
 
     var columns = [
       "familyBefore",
@@ -404,29 +419,33 @@ class View {
 
     // Calculate Column Scale
     let columnRange = []
-    let sum = 0;
+    let xRange = 0;
     columns.forEach((c) => {
-      columnRange.push(sum);
+      columnRange.push(xRange);
       let value = this.barWidthScale(d3.max(this.nodes, (d) => d[c]));
 
-      if(value < 100){
+      if (value < 100) {
         value = 100;
       }
 
-      sum += value;
+      xRange += value;
 
     })
 
+
+
     console.log(columnRange);
     this.columnScale.range(columnRange);
-    let barMargin = { top: 1, bottom: 1, left: 5, right: 5 }
-    let barHeight = 10 - barMargin.top - barMargin.bottom;
+
+
+
 
     /* Create data columns data */
     columns.forEach((c) => {
       console.log(c);
       let columnPosition = this.columnScale(c);
       console.log(columnPosition);
+
 
       this.attributeRows
         .append("rect")
@@ -452,14 +471,28 @@ class View {
 
     });
 
+    // Add Verticle Dividers
+    this.attributes.selectAll('.column')
+      .data(columns)
+      .enter()
+      .append('line')
+      .style('stroke', '1px')
+      .attr('x1', (d) => this.columnScale(d))
+      .attr("y1", -20)
+      .attr('x2', (d) => this.columnScale(d))
+      .attr("y2", this.attributeHeight + this.margins.bottom)
+      .attr('stroke-opacity', 0.4);
+
+    // Add headers
+
     let columnHeaders = this.attributes.append('g')
       .classed('column-headers', true)
 
     this.columnNames = {
-      "familyBefore":"Family (B)",
-      "familyAfter":"Family (A)",
-      "individualBefore":"Individual (B)",
-      "individualAfter":"Individual (A)"
+      "familyBefore": "Family (B)",
+      "familyAfter": "Family (A)",
+      "individualBefore": "Individual (B)",
+      "individualAfter": "Individual (A)"
     }
 
     console.log(columnHeaders);
@@ -467,10 +500,10 @@ class View {
       .data(columns)
       .enter()
       .append('text')
-      .classed('header',true)
-      .attr('y',-30)
-      .attr('x',(d)=>this.columnScale(d)+barMargin.left)
-      .style('font-size','16px')
+      .classed('header', true)
+      .attr('y', -30)
+      .attr('x', (d) => this.columnScale(d) + barMargin.left)
+      .style('font-size', '16px')
       .attr('text-anchor', 'left')
       .text((d, i) => {
         console.log(d)
