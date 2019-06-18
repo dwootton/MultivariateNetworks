@@ -266,6 +266,11 @@ var View = /** @class */ (function () {
             .duration(500)
             .delay(function (d, i) { return _this.verticalScale(i) * 4; })
             .attr("transform", function (d, i) { return "translate(0," + _this.verticalScale(i) + ")"; });
+        /*d3.selectAll('.highlightRow')
+          .transition()
+          .duration(500)
+          .delay((d, i) => { return this.verticalScale(i) * 4; })
+          .attr('fill',(d,i)=>{console.log(d);return i%2 == 0 ? "#aaa" : "#bbb"})*/
         var t = this.edges.transition().duration(500);
         t.selectAll(".column")
             .delay(function (d, i) { return _this.verticalScale(i) * 4; })
@@ -289,6 +294,17 @@ var View = /** @class */ (function () {
             .attr("width", "100%")
             .attr("height", "100%")
             .attr("fill", "pink");
+        // add zebras and highlight rows
+        this.attributes.selectAll('.highlightRow')
+            .data(this.nodes)
+            .enter()
+            .append('rect')
+            .classed('highlightRow', true)
+            .attr('x', 0)
+            .attr('y', function (d, i) { return _this.verticalScale(i); })
+            .attr('width', this.attributeWidth)
+            .attr('height', this.verticalScale.bandwidth())
+            .attr('fill', function (d, i) { return i % 2 == 0 ? "#fff" : "#eee"; });
         var barMargin = { top: 2, bottom: 1, left: 5, right: 5 };
         var barHeight = 10 - barMargin.top - barMargin.bottom;
         // Draw each row (translating the y coordinate)
@@ -299,19 +315,10 @@ var View = /** @class */ (function () {
             .attr("transform", function (d, i) {
             return "translate(0," + _this.verticalScale(i) + ")";
         });
-        // add zebras and highlight rows
-        this.attributeRows
-            .append('rect')
-            .classed('highlightRow', true)
-            .attr('x', 0)
-            .attr('y', 0)
-            .attr('width', this.attributeWidth)
-            .attr('height', this.verticalScale.bandwidth())
-            .attr('fill', function (d, i) { return i % 2 == 0 ? "#fff" : "#eee"; });
         this.attributeRows.append("line")
             .attr("x2", this.attributeWidth)
             .attr('stroke', '2px')
-            .attr('stroke-opacity', 0.4);
+            .attr('stroke-opacity', 0.3);
         var columns = [
             "familyBefore",
             "familyAfter",

@@ -187,7 +187,7 @@ class View {
     this.viewWidth = 1000;
 
     //this.viewHeight =
-      this.margins = { left: 45, top: 55, right: 10, bottom: 10 };
+    this.margins = { left: 45, top: 55, right: 10, bottom: 10 };
 
     this.initalizeEdges();
     this.initalizeAttributes();
@@ -349,6 +349,12 @@ class View {
       .delay((d, i) => { return this.verticalScale(i) * 4; })
       .attr("transform", (d, i) => { return "translate(0," + this.verticalScale(i) + ")"; })
 
+    /*d3.selectAll('.highlightRow')
+      .transition()
+      .duration(500)
+      .delay((d, i) => { return this.verticalScale(i) * 4; })
+      .attr('fill',(d,i)=>{console.log(d);return i%2 == 0 ? "#aaa" : "#bbb"})*/
+
     var t = this.edges.transition().duration(500);
     t.selectAll(".column")
       .delay((d, i) => { return this.verticalScale(i) * 4; })
@@ -374,6 +380,18 @@ class View {
       .attr("height", "100%")
       .attr("fill", "pink");
 
+    // add zebras and highlight rows
+    this.attributes.selectAll('.highlightRow')
+      .data(this.nodes)
+      .enter()
+      .append('rect')
+      .classed('highlightRow', true)
+      .attr('x', 0)
+      .attr('y', (d, i) => this.verticalScale(i))
+      .attr('width', this.attributeWidth)
+      .attr('height', this.verticalScale.bandwidth())
+      .attr('fill', (d, i) => { return i % 2 == 0 ? "#fff" : "#eee" })
+
     let barMargin = { top: 2, bottom: 1, left: 5, right: 5 }
     let barHeight = 10 - barMargin.top - barMargin.bottom;
     // Draw each row (translating the y coordinate)
@@ -385,21 +403,13 @@ class View {
         return "translate(0," + this.verticalScale(i) + ")";
       });
 
-    // add zebras and highlight rows
-    this.attributeRows
-      .append('rect')
-      .classed('highlightRow',true)
-      .attr('x', 0)
-      .attr('y', 0)
-      .attr('width', this.attributeWidth)
-      .attr('height', this.verticalScale.bandwidth())
-      .attr('fill',(d,i)=>{return i%2 == 0 ? "#fff" : "#eee"})
+
 
 
     this.attributeRows.append("line")
       .attr("x2", this.attributeWidth)
-      .attr('stroke','2px')
-      .attr('stroke-opacity',0.4);
+      .attr('stroke', '2px')
+      .attr('stroke-opacity', 0.3);
 
     var columns = [
       "familyBefore",
