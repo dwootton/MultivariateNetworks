@@ -469,7 +469,7 @@ class View {
       .append('text')
       .classed('header',true)
       .attr('y',-30)
-      .attr('x',(d)=>this.columnScale(d))
+      .attr('x',(d)=>this.columnScale(d)+barMargin.left)
       .style('font-size','16px')
       .attr('text-anchor', 'left')
       .text((d, i) => {

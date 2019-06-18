@@ -363,7 +363,7 @@ var View = /** @class */ (function () {
             .append('text')
             .classed('header', true)
             .attr('y', -30)
-            .attr('x', function (d) { return _this.columnScale(d); })
+            .attr('x', function (d) { return _this.columnScale(d) + barMargin.left; })
             .style('font-size', '16px')
             .attr('text-anchor', 'left')
             .text(function (d, i) {
