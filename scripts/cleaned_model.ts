@@ -130,28 +130,22 @@ class View {
 
     // set up load
     this.renderLoading();
-    /* elmnt.scrollLeft = 50;
-    elmnt.scrollTop = 10;*/
+
+    // Add scroll handler to containers
     d3.selectAll('.container').on('mousewheel', scrollHandler);
-    function scrollHandler(p){
+
+    function scrollHandler() {
       // determine which didn't scroll and update it's scroll.
-      //console.log("SCROLLED!")
-      console.log(d3.select(this).attr('id'),d3.select(this).node().scrollTop);
       let scrollHeight = d3.select(this).node().scrollTop;
-      console.log(scrollHeight);
-      if(d3.select(this).attr('id') == "attributes"){
+      if (d3.select(this).attr('id') == "attributes") {
         // scroll topology
-        d3.select('#topology').node().scrollTop = scrollHeight;
-        //d3.select('#topology').attr('scrollTop',scrollHeight);
+        let element: any = d3.select('#topology').node();
+        element.scrollTop = scrollHeight;
       } else {
         // scroll attributes
-        d3.select('#attributes').node().scrollTop = scrollHeight;
-        //d3.select('#attributes').attr('scrollTop',scrollHeight);
+        let element: any = d3.select('#attributes').node()
+        element.scrollTop = scrollHeight;
       }
-      document.getElementById('attributes').scrollTop;
-      document.getElementById('topology').scrollTop;
-
-
     }
   }
 
@@ -191,12 +185,14 @@ class View {
    */
   renderView() {
     this.viewWidth = 1000;
-    this.margins = { left: 45, top: 45, right: 10, bottom: 10 };
+
+    this.viewHeight =
+      this.margins = { left: 45, top: 55, right: 10, bottom: 10 };
 
     this.initalizeEdges();
     this.initalizeAttributes();
     let that = this;
-    d3.select("#order").on("change", function(){
+    d3.select("#order").on("change", function() {
       that.sort(this.value);
     });
   }
@@ -213,8 +209,8 @@ class View {
     d3.select('#topology').style('float', 'left');
 
     this.edges = d3.select('#topology').append("svg")
-      .attr("width", this.edgeWidth*3 + this.margins.left + this.margins.right)
-      .attr("height", this.edgeHeight*4 + this.margins.top + this.margins.bottom)
+      .attr("width", this.edgeWidth + this.margins.left + this.margins.right)
+      .attr("height", this.edgeHeight + this.margins.top + this.margins.bottom)
       .append("g")
       .attr('id', 'edgeMargin')
       .attr("transform", "translate(" + this.margins.left + "," + this.margins.top + ")")
@@ -342,22 +338,23 @@ class View {
       .transition()
       .duration(500)
       .delay((d, i) => { return this.verticalScale(i) * 4; })
-      .attr("transform", (d, i) =>{ return "translate(0," + this.verticalScale(i) + ")"; })
-      /*.selectAll(".cell")
-      .delay((d)=> { console.log(d);return this.verticalScale(d.x) * 4; })
-      .attr("x", (d) =>{ return this.verticalScale(d.x); });*/
-    console.log(this.attributes,this.attributeRows);
+      .attr("transform", (d, i) => { return "translate(0," + this.verticalScale(i) + ")"; })
+    /*.selectAll(".cell")
+    .delay((d)=> { console.log(d);return this.verticalScale(d.x) * 4; })
+    .attr("x", (d) =>{ return this.verticalScale(d.x); });*/
+    console.log(this.attributes, this.attributeRows);
     this.attributeRows
       .transition()
       .duration(500)
       .delay((d, i) => { return this.verticalScale(i) * 4; })
-      .attr("transform", (d, i) =>{ return "translate(0," + this.verticalScale(i) + ")"; })
+      .attr("transform", (d, i) => { return "translate(0," + this.verticalScale(i) + ")"; })
 
     var t = this.edges.transition().duration(500);
     t.selectAll(".column")
-      .delay((d, i) =>{ return this.verticalScale(i) * 4; })
+      .delay((d, i) => { return this.verticalScale(i) * 4; })
       .attr("transform", (d, i) => { return "translate(" + this.verticalScale(i) + ")rotate(-90)"; });
   }
+  private columnNames : {};
   /**
    * [initalizeAttributes description]
    * @return [description]
@@ -367,8 +364,8 @@ class View {
     this.attributeHeight = 600 - this.margins.top - this.margins.bottom;
 
     this.attributes = d3.select('#attributes').append("svg")
-      .attr("width", this.edgeWidth*3 + this.margins.left + this.margins.right)
-      .attr("height", this.edgeHeight*3 + this.margins.top + this.margins.bottom)
+      .attr("width", this.edgeWidth * 3 + this.margins.left + this.margins.right)
+      .attr("height", this.edgeHeight * 3 + this.margins.top + this.margins.bottom)
       .append("g")
       .attr('id', 'edgeMargin')
       .attr("transform", "translate(" + this.margins.left + "," + this.margins.top + ")");
@@ -410,7 +407,13 @@ class View {
     let sum = 0;
     columns.forEach((c) => {
       columnRange.push(sum);
-      sum += this.barWidthScale(d3.max(this.nodes, (d) => d[c]));
+      let value = this.barWidthScale(d3.max(this.nodes, (d) => d[c]));
+
+      if(value < 100){
+        value = 100;
+      }
+
+      sum += value;
 
     })
 
@@ -419,6 +422,7 @@ class View {
     let barMargin = { top: 1, bottom: 1, left: 5, right: 5 }
     let barHeight = 10 - barMargin.top - barMargin.bottom;
 
+    /* Create data columns data */
     columns.forEach((c) => {
       console.log(c);
       let columnPosition = this.columnScale(c);
@@ -444,18 +448,45 @@ class View {
           return (i ? formatNumber : formatCurrency)(d);
         });
 
+
+
     });
+
+    let columnHeaders = this.attributes.append('g')
+      .classed('column-headers', true)
+
+    this.columnNames = {
+      "familyBefore":"Family (B)",
+      "familyAfter":"Family (A)",
+      "individualBefore":"Individual (B)",
+      "individualAfter":"Individual (A)"
+    }
+
+    console.log(columnHeaders);
+    columnHeaders.selectAll('.header')
+      .data(columns)
+      .enter()
+      .append('text')
+      .classed('header',true)
+      .attr('y',-30)
+      .attr('x',(d)=>this.columnScale(d))
+      .style('font-size','16px')
+      .attr('text-anchor', 'left')
+      .text((d, i) => {
+        console.log(d)
+        return this.columnNames[d];
+      });
+
+
+
+
 
 
 
     console.log(this.attributeRows)
+    // Append g's for table headers
+    // For any data row, add
 
-    var columnLabel = d3.selectAll(".g-table-head .g-table-cell")
-      .datum(function() {
-        let that: any = this;
-
-        return that.getAttribute("data-key");
-      })
     /*.on("click", clicked)
     .select(".g-table-column")
     .classed("g-table-column-" + (sortOrder === d3.ascending ? "ascending" : "descending"), function(d) {
