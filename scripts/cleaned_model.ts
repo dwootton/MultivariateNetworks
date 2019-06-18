@@ -215,10 +215,7 @@ class View {
       .attr('id', 'edgeMargin')
       .attr("transform", "translate(" + this.margins.left + "," + this.margins.top + ")")
 
-    this.edges.append("rect")
-      .attr("width", 1300)
-      .attr("height", 1300)
-      .attr("fill", "pink");
+
 
     this.verticalScale = d3.scaleBand<number>().range([0, this.edgeWidth]).domain(d3.range(this.nodes.length));
 
@@ -309,7 +306,7 @@ class View {
       .text((d, i) => this.nodes[i].abbr);
 
     let val = this.edgeRows.append("line")
-      .attr("x2", this.edgeWidth);
+      .attr("x2", this.edgeWidth+this.margins.right);
 
     this.edgeColumns.append("line")
       .attr("x1", -this.edgeWidth);
@@ -374,11 +371,8 @@ class View {
       .attr("height", this.attributeHeight + this.margins.top + this.margins.bottom)
       .append("g")
       .attr('id', 'edgeMargin')
-      .attr("transform", "translate(" + this.margins.left + "," + this.margins.top + ")");
-    this.attributes.append("rect")
-      .attr("width", "100%")
-      .attr("height", "100%")
-      .attr("fill", "pink");
+      .attr("transform", "translate(" + 0 + "," + this.margins.top + ")");
+
 
     // add zebras and highlight rows
     this.attributes.selectAll('.highlightRow')
@@ -391,6 +385,14 @@ class View {
       .attr('width', this.attributeWidth)
       .attr('height', this.verticalScale.bandwidth())
       .attr('fill', (d, i) => { return i % 2 == 0 ? "#fff" : "#eee" })
+      .on('mouseover',function(){
+        d3.select(this)
+          .classed('hovered',true);
+      })
+      .on('mouseout',function(){
+        d3.select(this)
+          .classed('hovered',false);
+      })
 
     let barMargin = { top: 2, bottom: 1, left: 5, right: 5 }
     let barHeight = 10 - barMargin.top - barMargin.bottom;
@@ -407,6 +409,7 @@ class View {
 
 
     this.attributeRows.append("line")
+      .attr("x1",0)
       .attr("x2", this.attributeWidth)
       .attr('stroke', '2px')
       .attr('stroke-opacity', 0.3);

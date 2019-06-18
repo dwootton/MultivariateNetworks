@@ -157,10 +157,6 @@ var View = /** @class */ (function () {
             .append("g")
             .attr('id', 'edgeMargin')
             .attr("transform", "translate(" + this.margins.left + "," + this.margins.top + ")");
-        this.edges.append("rect")
-            .attr("width", 1300)
-            .attr("height", 1300)
-            .attr("fill", "pink");
         this.verticalScale = d3.scaleBand().range([0, this.edgeWidth]).domain(d3.range(this.nodes.length));
         // Draw each row (translating the y coordinate)
         this.edgeRows = this.edges.selectAll(".row")
@@ -234,7 +230,7 @@ var View = /** @class */ (function () {
             .style("font-size", 8 + "px")
             .text(function (d, i) { return _this.nodes[i].abbr; });
         var val = this.edgeRows.append("line")
-            .attr("x2", this.edgeWidth);
+            .attr("x2", this.edgeWidth + this.margins.right);
         this.edgeColumns.append("line")
             .attr("x1", -this.edgeWidth);
         this.tooltip = d3.select("body")
@@ -289,11 +285,7 @@ var View = /** @class */ (function () {
             .attr("height", this.attributeHeight + this.margins.top + this.margins.bottom)
             .append("g")
             .attr('id', 'edgeMargin')
-            .attr("transform", "translate(" + this.margins.left + "," + this.margins.top + ")");
-        this.attributes.append("rect")
-            .attr("width", "100%")
-            .attr("height", "100%")
-            .attr("fill", "pink");
+            .attr("transform", "translate(" + 0 + "," + this.margins.top + ")");
         // add zebras and highlight rows
         this.attributes.selectAll('.highlightRow')
             .data(this.nodes)
@@ -304,7 +296,15 @@ var View = /** @class */ (function () {
             .attr('y', function (d, i) { return _this.verticalScale(i); })
             .attr('width', this.attributeWidth)
             .attr('height', this.verticalScale.bandwidth())
-            .attr('fill', function (d, i) { return i % 2 == 0 ? "#fff" : "#eee"; });
+            .attr('fill', function (d, i) { return i % 2 == 0 ? "#fff" : "#eee"; })
+            .on('mouseover', function () {
+            d3.select(this)
+                .classed('hovered', true);
+        })
+            .on('mouseout', function () {
+            d3.select(this)
+                .classed('hovered', false);
+        });
         var barMargin = { top: 2, bottom: 1, left: 5, right: 5 };
         var barHeight = 10 - barMargin.top - barMargin.bottom;
         // Draw each row (translating the y coordinate)
@@ -316,6 +316,7 @@ var View = /** @class */ (function () {
             return "translate(0," + _this.verticalScale(i) + ")";
         });
         this.attributeRows.append("line")
+            .attr("x1", 0)
             .attr("x2", this.attributeWidth)
             .attr('stroke', '2px')
             .attr('stroke-opacity', 0.3);
