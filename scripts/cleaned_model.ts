@@ -229,7 +229,7 @@ class View {
       });
 
     var squares = this.edgeRows.selectAll(".cell")
-      .data(d => d.filter(item => item.z > 0))
+      .data(d => { console.log(d); return d.filter(item => item.z > 0) })
       .enter().append("rect")
       .attr("class", "cell")
       .attr("x", d => this.verticalScale(d.x))
@@ -306,7 +306,7 @@ class View {
       .text((d, i) => this.nodes[i].abbr);
 
     let val = this.edgeRows.append("line")
-      .attr("x2", this.edgeWidth+this.margins.right);
+      .attr("x2", this.edgeWidth + this.margins.right);
 
     this.edgeColumns.append("line")
       .attr("x1", -this.edgeWidth);
@@ -336,9 +336,10 @@ class View {
       .duration(500)
       .delay((d, i) => { return this.verticalScale(i) * 4; })
       .attr("transform", (d, i) => { return "translate(0," + this.verticalScale(i) + ")"; })
-    /*.selectAll(".cell")
-    .delay((d)=> { console.log(d);return this.verticalScale(d.x) * 4; })
-    .attr("x", (d) =>{ return this.verticalScale(d.x); });*/
+      .selectAll(".cell")
+      .delay((d) => { console.log(d); return this.verticalScale(d.x) * 4; })
+      .attr("x", (d) => { return this.verticalScale(d.x); });
+
     console.log(this.attributes, this.attributeRows);
     this.attributeRows
       .transition()
@@ -385,13 +386,13 @@ class View {
       .attr('width', this.attributeWidth)
       .attr('height', this.verticalScale.bandwidth())
       .attr('fill', (d, i) => { return i % 2 == 0 ? "#fff" : "#eee" })
-      .on('mouseover',function(){
+      .on('mouseover', function() {
         d3.select(this)
-          .classed('hovered',true);
+          .classed('hovered', true);
       })
-      .on('mouseout',function(){
+      .on('mouseout', function() {
         d3.select(this)
-          .classed('hovered',false);
+          .classed('hovered', false);
       })
 
     let barMargin = { top: 2, bottom: 1, left: 5, right: 5 }
@@ -409,7 +410,7 @@ class View {
 
 
     this.attributeRows.append("line")
-      .attr("x1",0)
+      .attr("x1", 0)
       .attr("x2", this.attributeWidth)
       .attr('stroke', '2px')
       .attr('stroke-opacity', 0.3);

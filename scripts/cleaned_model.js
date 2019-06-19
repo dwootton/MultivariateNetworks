@@ -167,7 +167,7 @@ var View = /** @class */ (function () {
             return "translate(0," + _this.verticalScale(i) + ")";
         });
         var squares = this.edgeRows.selectAll(".cell")
-            .data(function (d) { return d.filter(function (item) { return item.z > 0; }); })
+            .data(function (d) { console.log(d); return d.filter(function (item) { return item.z > 0; }); })
             .enter().append("rect")
             .attr("class", "cell")
             .attr("x", function (d) { return _this.verticalScale(d.x); })
@@ -252,10 +252,10 @@ var View = /** @class */ (function () {
             .transition()
             .duration(500)
             .delay(function (d, i) { return _this.verticalScale(i) * 4; })
-            .attr("transform", function (d, i) { return "translate(0," + _this.verticalScale(i) + ")"; });
-        /*.selectAll(".cell")
-        .delay((d)=> { console.log(d);return this.verticalScale(d.x) * 4; })
-        .attr("x", (d) =>{ return this.verticalScale(d.x); });*/
+            .attr("transform", function (d, i) { return "translate(0," + _this.verticalScale(i) + ")"; })
+            .selectAll(".cell")
+            .delay(function (d) { console.log(d); return _this.verticalScale(d.x) * 4; })
+            .attr("x", function (d) { return _this.verticalScale(d.x); });
         console.log(this.attributes, this.attributeRows);
         this.attributeRows
             .transition()
