@@ -176,35 +176,44 @@ var View = /** @class */ (function () {
             /*.style("fill-opacity", d => opacityScale(d.z)).style("fill", d => {
               return nodes[d.x].group == nodes[d.y].group ? colorScale(nodes[d.x].group) : "grey";
             }) */
-            .on("mouseover", mouseover)
-            .on("mouseout", mouseout);
+            .on("mouseover", mouseoverCell)
+            .on("mouseout", mouseoutCell);
         var that = this;
-        function mouseover(p) {
+        function mouseoverCell(p) {
             console.log(p);
             d3.event.preventDefault();
+            var rowIndex, colIndex;
             d3.selectAll(".row text").classed("active", function (d, i) {
+                if (i == p.y) {
+                    rowIndex = i;
+                }
                 return i == p.y;
             });
             d3.selectAll(".column text").classed("active", function (d, i) {
+                if (i == p.x) {
+                    colIndex = i;
+                }
                 return i == p.x;
             });
+            console.log(rowIndex, colIndex);
+            d3.selectAll('.highlightRow')
+                .filter(function (d, i) { return i === rowIndex || i == colIndex; })
+                .classed('hovered', true);
             that.tooltip.transition().duration(200).style("opacity", .9);
             var matrix = this.getScreenCTM()
                 .translate(+this.getAttribute("x"), +this.getAttribute("y"));
             that.tooltip.transition()
                 .duration(200)
                 .style("opacity", .9);
-            console.log(matrix, window.pageXOffset, window.pageYOffset);
-            /*that.tooltip.html("DATA:")
-                .style("left", d3.select(this).attr("x") + "px")
-                .style("top", d3.select(this).attr("y") + "px");*/
             that.tooltip.html("DATA")
                 .style("left", (window.pageXOffset + matrix.e - 20) + "px")
                 .style("top", (window.pageYOffset + matrix.f - 20) + "px");
         }
-        function mouseout() {
+        function mouseoutCell() {
             d3.selectAll("text").classed("active", false);
             that.tooltip.transition().duration(250).style("opacity", 0);
+            d3.selectAll('.highlightRow')
+                .classed('hovered', false);
         }
         this.edgeColumns = this.edges.selectAll(".column")
             .data(this.matrix)
@@ -401,6 +410,8 @@ var View = /** @class */ (function () {
             console.log(d);
             return _this.columnNames[d];
         });
+        //
+        columnHeaders.selectAll('.legend');
         console.log(this.attributeRows);
         // Append g's for table headers
         // For any data row, add

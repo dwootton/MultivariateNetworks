@@ -238,19 +238,32 @@ class View {
       /*.style("fill-opacity", d => opacityScale(d.z)).style("fill", d => {
         return nodes[d.x].group == nodes[d.y].group ? colorScale(nodes[d.x].group) : "grey";
       }) */
-      .on("mouseover", mouseover)
-      .on("mouseout", mouseout);
+      .on("mouseover", mouseoverCell)
+      .on("mouseout", mouseoutCell);
 
     let that = this;
-    function mouseover(p) {
+    function mouseoverCell(p) {
       console.log(p);
       d3.event.preventDefault();
+
+      // Highlight attribute rows on hovered edge
+      let rowIndex, colIndex;
       d3.selectAll(".row text").classed("active", (d, i) => {
+        if (i == p.y) {
+          rowIndex = i;
+        }
         return i == p.y;
       });
       d3.selectAll(".column text").classed("active", (d, i) => {
+        if (i == p.x) {
+          colIndex = i;
+        }
         return i == p.x;
       });
+
+      d3.selectAll('.highlightRow')
+        .filter((d, i) => { return i === rowIndex || i == colIndex; })
+        .classed('hovered', true)
 
       that.tooltip.transition().duration(200).style("opacity", .9);
 
@@ -260,22 +273,17 @@ class View {
       that.tooltip.transition()
         .duration(200)
         .style("opacity", .9);
-      console.log(matrix, window.pageXOffset, window.pageYOffset);
-      /*that.tooltip.html("DATA:")
-          .style("left", d3.select(this).attr("x") + "px")
-          .style("top", d3.select(this).attr("y") + "px");*/
 
       that.tooltip.html("DATA")
         .style("left", (window.pageXOffset + matrix.e - 20) + "px")
         .style("top", (window.pageYOffset + matrix.f - 20) + "px");
-
-
-
     }
 
-    function mouseout() {
+    function mouseoutCell() {
       d3.selectAll("text").classed("active", false);
       that.tooltip.transition().duration(250).style("opacity", 0);
+      d3.selectAll('.highlightRow')
+        .classed('hovered', false);
     }
 
 
@@ -523,6 +531,10 @@ class View {
         console.log(d)
         return this.columnNames[d];
       });
+
+    //
+    columnHeaders.selectAll('.legend')
+
 
 
 
