@@ -165,9 +165,9 @@ class Model {
     this.edges.forEach((link) => {
       console.log(link);
       let addValue = 0;
-      if(link.type == "reply"){
+      if (link.type == "reply") {
         addValue = 3;
-      } else if(link.type =="retweet"){
+      } else if (link.type == "retweet") {
         addValue = 2;
       } else {
         addValue = 1;
@@ -383,11 +383,11 @@ class View {
       //.style("fill", d => this.opacityScale(d.z))
       .style("fill", d => {
         console.log(d);
-        if(d.z == 3){
+        if (d.z == 3) {
           return "green"; // reply
-        } else if (d.z == 2){
+        } else if (d.z == 2) {
           return "black"; // retweet
-        } else if (d.z == 1){
+        } else if (d.z == 1) {
           return "orange"; // other
         }
       })
@@ -532,7 +532,7 @@ class View {
    * @return [description]
    */
   initalizeAttributes() {
-    this.attributeWidth = 375 - this.margins.left - this.margins.right;
+    this.attributeWidth = 475 - this.margins.left - this.margins.right;
     this.attributeHeight = 600 - this.margins.top - this.margins.bottom;
 
     this.attributes = d3.select('#attributes').append("svg")
@@ -581,42 +581,67 @@ class View {
       .attr('stroke-opacity', 0.3);
 
     let columns = [
-      "followers_count",
-      "query_tweet_count",
-      "friends_count",
-      "statuses_count",
-      "listed_count",
-      "favourites_count",
-      "count_followers_in_query",
-      "screen_name",
-      "influential",
-      "original"
+      "followers_count",// numerical
+      "query_tweet_count",// numerical
+      "friends_count",// numerical
+      "statuses_count", // numerical
+      "listed_count", // numerical
+      "favourites_count", // numerical
+      "count_followers_in_query",  // numerical
+      // string "screen_name",
+      "influential", // bool, maybe gold?
+      "original" // bool, maybe green?
     ];
+    // Based on the data type set widths
+    // numerical are 50, bool are a verticle bandwidth * 2
+    //
 
 
     var formatCurrency = d3.format("$,.0f"),
       formatNumber = d3.format(",.0f");
 
-    this.barWidthScale = d3.scaleLinear()
-      .domain([0, 1400])
-      .range([0, 140]);
-
+    // generate scales for each
+    let attributeScales = {};
     this.columnScale = d3.scaleOrdinal().domain(columns)
 
     // Calculate Column Scale
     let columnRange = []
     let xRange = 0;
-    columns.forEach((c) => {
-      columnRange.push(xRange);
-      let value = this.barWidthScale(d3.max(this.nodes, (d) => d[c]));
 
-      if (value < 100) {
-        value = 100;
+
+
+    columns.forEach(col => {
+      // calculate range
+      columnRange.push(xRange);
+
+      let colWidth = 0;
+      if (col == "influential" || col == "original") {
+        // append colored blocks
+        let scale = d3.scaleLinear()//.domain([true,false]).range([barMargin.left, colWidth-barMargin.right]);
+
+        attributeScales[col] = scale;
+        colWidth = 40;
+      } else {
+        let range = d3.extent(this.nodes, (d) => { return d[col] })
+        colWidth = 50;
+        console.log(range);
+        let scale = d3.scaleLinear().domain(range).range([barMargin.left, colWidth-barMargin.right]);
+        console.log(scale);
+        attributeScales[col] =scale;
       }
 
-      xRange += value;
-
+      xRange += colWidth;
+      console.log(attributeScales);
     })
+
+    // need max and min of each column
+    /*this.barWidthScale = d3.scaleLinear()
+      .domain([0, 1400])
+      .range([0, 140]);*/
+
+
+
+
 
 
 
@@ -643,7 +668,7 @@ class View {
         .attr('fill', '#8B8B8B')
         .transition()
         .duration(2000)
-        .attr('width', (d, i) => { console.log(d, this.barWidthScale(d[c])); return this.barWidthScale(d[c]) - barMargin.right - barMargin.left })
+        .attr('width', (d, i) => { console.log(d, attributeScales[c](d[c])); return attributeScales[c](d[c]); })
 
 
       this.attributeRows
@@ -674,11 +699,27 @@ class View {
     let columnHeaders = this.attributes.append('g')
       .classed('column-headers', true)
 
+      "followers_count",// numerical
+      "query_tweet_count",// numerical
+      "friends_count",// numerical
+      "statuses_count", // numerical
+      "listed_count", // numerical
+      "favourites_count", // numerical
+      "count_followers_in_query",  // numerical
+      // string "screen_name",
+      "influential", // bool, maybe gold?
+      "original" // bool, maybe green?
+
     this.columnNames = {
-      "familyBefore": "Family (B)",
-      "familyAfter": "Family (A)",
-      "individualBefore": "Individual (B)",
-      "individualAfter": "Individual (A)"
+      "followers_count": "Followers",
+      "query_tweet_count": "Tweet",
+      "friends_count": "Friends",
+      "statuses_count": "Statuses ",
+      "listed_count": "Listed",
+      "favourites_count": "Favourites",
+      "count_followers_in_query": "Followers",
+      "influential": "Influential",
+      "original": "Original",
     }
 
     console.log(columnHeaders);
@@ -689,7 +730,7 @@ class View {
       .classed('header', true)
       .attr('y', -30)
       .attr('x', (d) => this.columnScale(d) + barMargin.left)
-      .style('font-size', '16px')
+      .style('font-size', '12px')
       .attr('text-anchor', 'left')
       .text((d, i) => {
         console.log(d)

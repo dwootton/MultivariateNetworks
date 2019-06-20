@@ -419,7 +419,7 @@ var View = /** @class */ (function () {
      */
     View.prototype.initalizeAttributes = function () {
         var _this = this;
-        this.attributeWidth = 375 - this.margins.left - this.margins.right;
+        this.attributeWidth = 475 - this.margins.left - this.margins.right;
         this.attributeHeight = 600 - this.margins.top - this.margins.bottom;
         this.attributes = d3.select('#attributes').append("svg")
             .attr("width", this.attributeWidth + this.margins.left + this.margins.right)
@@ -469,26 +469,45 @@ var View = /** @class */ (function () {
             "listed_count",
             "favourites_count",
             "count_followers_in_query",
-            "screen_name",
+            // string "screen_name",
             "influential",
-            "original"
+            "original" // bool, maybe green?
         ];
+        // Based on the data type set widths
+        // numerical are 50, bool are a verticle bandwidth * 2
+        //
         var formatCurrency = d3.format("$,.0f"), formatNumber = d3.format(",.0f");
-        this.barWidthScale = d3.scaleLinear()
-            .domain([0, 1400])
-            .range([0, 140]);
+        // generate scales for each
+        var attributeScales = {};
         this.columnScale = d3.scaleOrdinal().domain(columns);
         // Calculate Column Scale
         var columnRange = [];
         var xRange = 0;
-        columns.forEach(function (c) {
+        columns.forEach(function (col) {
+            // calculate range
             columnRange.push(xRange);
-            var value = _this.barWidthScale(d3.max(_this.nodes, function (d) { return d[c]; }));
-            if (value < 100) {
-                value = 100;
+            var colWidth = 0;
+            if (col == "influential" || col == "original") {
+                // append colored blocks
+                var scale = d3.scaleLinear(); //.domain([true,false]).range([barMargin.left, colWidth-barMargin.right]);
+                attributeScales[col] = scale;
+                colWidth = 40;
             }
-            xRange += value;
+            else {
+                var range = d3.extent(_this.nodes, function (d) { return d[col]; });
+                colWidth = 50;
+                console.log(range);
+                var scale = d3.scaleLinear().domain(range).range([barMargin.left, colWidth - barMargin.right]);
+                console.log(scale);
+                attributeScales[col] = scale;
+            }
+            xRange += colWidth;
+            console.log(attributeScales);
         });
+        // need max and min of each column
+        /*this.barWidthScale = d3.scaleLinear()
+          .domain([0, 1400])
+          .range([0, 140]);*/
         console.log(columnRange);
         this.columnScale.range(columnRange);
         /* Create data columns data */
@@ -506,7 +525,7 @@ var View = /** @class */ (function () {
                 .attr('fill', '#8B8B8B')
                 .transition()
                 .duration(2000)
-                .attr('width', function (d, i) { console.log(d, _this.barWidthScale(d[c])); return _this.barWidthScale(d[c]) - barMargin.right - barMargin.left; });
+                .attr('width', function (d, i) { console.log(d, attributeScales[c](d[c])); return attributeScales[c](d[c]); });
             _this.attributeRows
                 .append("div")
                 .attr("class", "glyphLabel")
@@ -528,11 +547,26 @@ var View = /** @class */ (function () {
         // Add headers
         var columnHeaders = this.attributes.append('g')
             .classed('column-headers', true);
+        "followers_count", // numerical
+            "query_tweet_count", // numerical
+            "friends_count", // numerical
+            "statuses_count", // numerical
+            "listed_count", // numerical
+            "favourites_count", // numerical
+            "count_followers_in_query", // numerical
+            // string "screen_name",
+            "influential", // bool, maybe gold?
+            "original"; // bool, maybe green?
         this.columnNames = {
-            "familyBefore": "Family (B)",
-            "familyAfter": "Family (A)",
-            "individualBefore": "Individual (B)",
-            "individualAfter": "Individual (A)"
+            "followers_count": "Followers",
+            "query_tweet_count": "Tweet",
+            "friends_count": "Friends",
+            "statuses_count": "Statuses ",
+            "listed_count": "Listed",
+            "favourites_count": "Favourites",
+            "count_followers_in_query": "Followers",
+            "influential": "Influential",
+            "original": "Original",
         };
         console.log(columnHeaders);
         columnHeaders.selectAll('.header')
@@ -542,7 +576,7 @@ var View = /** @class */ (function () {
             .classed('header', true)
             .attr('y', -30)
             .attr('x', function (d) { return _this.columnScale(d) + barMargin.left; })
-            .style('font-size', '16px')
+            .style('font-size', '12px')
             .attr('text-anchor', 'left')
             .text(function (d, i) {
             console.log(d);
