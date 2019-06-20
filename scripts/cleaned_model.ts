@@ -295,7 +295,7 @@ class View {
     this.viewWidth = 1000;
 
     //this.viewHeight =
-    this.margins = { left: 45, top: 55, right: 10, bottom: 10 };
+    this.margins = { left: 65, top: 65, right: 10, bottom: 10 };
 
     this.initalizeEdges();
     this.initalizeAttributes();
@@ -456,20 +456,19 @@ class View {
 
     this.edgeRows.append("text")
       .attr("class", "label")
-      .attr("x", -5)
+      .attr("x", -10)
       .attr("y", this.verticalScale.bandwidth() / 2)
       .attr("dy", ".32em")
       .attr("text-anchor", "end")
-      .style("font-size", 8 + "px")
+      .style("font-size", 7.5 + "px")
       .text((d, i) => this.nodes[i].screen_name);
 
     this.edgeColumns.append("text")
       .attr("class", "label")
-      .attr("y", 100)
-      .attr("y", this.verticalScale.bandwidth() / 2)
+      .attr("y", -this.verticalScale.bandwidth() / 2)
       .attr("dy", ".32em")
       .attr("text-anchor", "start")
-      .style("font-size", 8 + "px")
+      .style("font-size", 7.5 + "px")
       .text((d, i) => this.nodes[i].screen_name);
 
     this.edgeRows.append("line")
@@ -699,16 +698,7 @@ class View {
     let columnHeaders = this.attributes.append('g')
       .classed('column-headers', true)
 
-      "followers_count",// numerical
-      "query_tweet_count",// numerical
-      "friends_count",// numerical
-      "statuses_count", // numerical
-      "listed_count", // numerical
-      "favourites_count", // numerical
-      "count_followers_in_query",  // numerical
-      // string "screen_name",
-      "influential", // bool, maybe gold?
-      "original" // bool, maybe green?
+
 
     this.columnNames = {
       "followers_count": "Followers",
