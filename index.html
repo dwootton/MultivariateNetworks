@@ -67,12 +67,14 @@ line {
 
   <p>Order:
     <select id="order">
-      <option value="name">by Name</option>
-      <option value="familyBefore">by Before: Family</option>
-      <option value="individualBefore">by Before: Individual</option>
-      <option value="familyAfter">by After: Family</option>
-      <option value="individualAfter">by After: Individual</option>
-      <option value="group">by Group</option>
+      <option value="screen_name">by Name</option>
+      <option value="followers_count">by Followers</option>
+      <option value="query_tweet_count">by Tweet Count</option>
+      <option value="friends_count">by Friends</option>
+      <option value="statuses_count">by Statuses</option>
+      <option value="listed_count">by Listed</option>
+      <option value="favourites_count">by Favourites</option>
+      <option value="count_followers_in_query">by Followers in Network</option>
     </select>
 
   </p>
@@ -85,11 +87,11 @@ line {
 
 <div id="interactiveFreeFormMain">
   <div id="topology" class="container" height="700" width="700"> </div>
-  <div id="attributes" class="container" height="700" width="700"> </div>
+  <div id="attributes" class="container" height="700" width="500"> </div>
 
 </div>
 
 <!-- <script src="http://requirejs.org/docs/release/2.1.8/comments/require.js"></script> -->
-<script src="scripts/d3.min.js"> </script>
+<script type="text/javascript" src="/scripts/d3.min.js"> </script>
 
-<script src="scripts/cleaned_model.js"> </script>
+<script type="text/javascript"  src="/scripts/cleaned_model.js"> </script>

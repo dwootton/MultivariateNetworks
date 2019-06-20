@@ -10,20 +10,112 @@ class Model {
   private edges: any;
   private order: any;
   private controller: any;
+  private idMap;
 
+
+  grabTwitterData(graph, tweets) {
+    let toRemove = [];
+    console.log(graph, tweets)
+    let newGraph = { 'nodes': [], 'links': [] };
+
+    //create edges from tweets.
+
+    tweets = tweets.tweets;
+
+    tweets.map((tweet) => {
+
+      //if a tweet mentions a person, create a 'mentions' edge between the tweeter, and the mentioned person.
+      tweet.entities.user_mentions.map(mention => {
+        let source = graph.nodes.find(n => n.id === tweet.user.id);
+        let target = graph.nodes.find(n => n.id === mention.id);
+
+
+        if (source && target) {
+          let link = { 'source': source.id, 'target': target.id, 'type': 'mentions' }
+
+          newGraph.links.push(link);
+          if (!newGraph.nodes.find(n => n === source)) {
+            newGraph.nodes.push(source);
+          }
+          if (!newGraph.nodes.find(n => n === target)) {
+            newGraph.nodes.push(target);
+          }
+        }
+        // console.log('link',link)
+
+      })
+
+
+
+      //if a tweet retweets another retweet, create a 'retweeted' edge between the re-tweeter and the original tweeter.
+      if (tweet.retweeted_status) {
+        let source = graph.nodes.find(n => n.id === tweet.user.id);
+        let target = graph.nodes.find(n => n.id === tweet.retweeted_status.user.id);
+
+
+        if (source && target) {
+          let link = { 'source': source.id, 'target': target.id, 'type': 'retweet' }
+
+          newGraph.links.push(link);
+          if (!newGraph.nodes.find(n => n === source)) {
+            newGraph.nodes.push(source);
+          }
+          if (!newGraph.nodes.find(n => n === target)) {
+            newGraph.nodes.push(target);
+          }
+        }
+
+      }
+
+      //if a tweet is a reply to another tweet, create an edge between the original tweeter and the author of the current tweet.
+      if (tweet.in_reply_to_user_id_str) {
+        let source = graph.nodes.find(n => n.id === tweet.user.id);
+        let target = graph.nodes.find(n => n.id === tweet.in_reply_to_user_id);
+
+        if (source && target) {
+          let link = { 'source': source.id, 'target': target.id, 'type': 'reply' }
+
+          newGraph.links.push(link);
+          if (!newGraph.nodes.find(n => n === source)) {
+            newGraph.nodes.push(source);
+          }
+          if (!newGraph.nodes.find(n => n === target)) {
+            newGraph.nodes.push(target);
+          }
+        }
+      }
+
+    })
+    return newGraph;
+  }
   constructor(controller: any) {
-    d3.json("data.json").then((data: any) => {
-      this.matrix = [];
-      this.nodes = data.nodes;
-      this.edges = data.links;
-      this.controller = controller;
+    d3.json("scripts/Eurovis2019Network.json").then((network: any) => {
+      d3.json("scripts/Eurovis2019Tweets.json").then((tweets: any) => {
+        let data = this.grabTwitterData(network, tweets);
+        this.matrix = [];
+        this.nodes = data.nodes
+        this.idMap = {};
+        this.nodes.forEach((node, index) => {
+          console.log(index)
+          node.index = index;
+          this.idMap[node.id] = index;
+        })
+        console.log(this.nodes)
+        this.nodes = this.nodes.sort((a, b) => a.screen_name.localeCompare(b.screen_name));
 
-      this.processData();
 
-      this.order = this.changeOrder('name');
-      console.log(this.order);
+        this.edges = data.links;
+        console.log(this.edges)
+        this.controller = controller;
 
-      this.controller.updateData(this.nodes, this.edges, this.matrix);
+        this.processData();
+
+        this.order = this.changeOrder('name');
+        console.log(this.order, d3.range(this.nodes.length), "Data");
+
+
+        this.controller.updateData(this.nodes, this.edges, this.matrix);
+      })
     })
   }
 
@@ -35,7 +127,7 @@ class Model {
   changeOrder(type: string) {
     let order;
     if (type == 'name') {
-      order = d3.range(this.nodes.length).sort((a, b) => { return d3.ascending(this.nodes[a].name, this.nodes[b].name); })
+      order = d3.range(this.nodes.length).sort((a, b) => { return d3.ascending(this.nodes[a].screen_name, this.nodes[b].screen_name); })
     }
     else {
       order = d3.range(this.nodes.length).sort((a, b) => { return this.nodes[b][type] - this.nodes[a][type]; })
@@ -48,30 +140,37 @@ class Model {
    * @return [description]
    */
   processData() {
+    // generate a hashmap of id's?
     // Set up node data
     this.nodes.forEach((node, i) => {
       node.index = i;
       node.count = 0;
 
       /* Numeric Conversion */
-      node.familyBefore = +node.familyBefore;
-      node.familyAfter = +node.familyAfter;
-      node.individualBefore = +node.individualBefore;
-      node.individualAfter = +node.individualAfter;
+      node.followers_count = +node.followers_count;
+      node.query_tweet_count = +node.query_tweet_count;
+      node.friends_count = +node.friends_count;
+      node.statuses_count = +node.statuses_count;
+      node.favourites_count = +node.favourites_count;
+      node.count_followers_in_query = +node.count_followers_in_query;
+      node.id = +node.id;
 
       /* matrix used for edge attributes, otherwise should we hide */
       this.matrix[i] = d3.range(this.nodes.length).map(function(j) { return { x: j, y: i, z: 0 }; });
     });
 
+    console.log(this.matrix);
+
     // Convert links to matrix; count character occurrences.
     this.edges.forEach((link) => {
+      console.log(link);
       /* could be used for varying edge types */
-      this.matrix[link.source][link.target].z += link.value;
-      this.matrix[link.target][link.source].z += link.value;
+      this.matrix[this.idMap[link.source]][this.idMap[link.target]].z += 1;
+      //this.matrix[this.idMap[link.target]][this.idMap[link.source]].z += 1;
       //matrix[link.source][link.source].z += link.value;
       //matrix[link.target][link.target].z += link.value;
-      this.matrix[link.source].count += link.value;
-      this.matrix[link.target].count += link.value;
+      this.matrix[this.idMap[link.source]].count += 1;
+      //this.matrix[this.idMap[link.target]].count += 1;
     });
   }
 
@@ -198,6 +297,21 @@ class View {
   }
 
   /**
+   * [highlightNodes description]
+   * @param  name         [description]
+   * @param  verticleNode [description]
+   * @return              [description]
+   */
+  highlightNodes(name: string, verticleNode: boolean) {
+    console.log(name);
+    let selector: string = verticleNode ? ".highlightRow" : ".highlightRow";
+
+    d3.selectAll(selector)
+      .filter((d: any) => { return d.name == name })
+      .classed('hovered', true);
+  }
+
+  /**
    * Initalizes the edges view, renders SVG
    * @return None
    */
@@ -215,9 +329,31 @@ class View {
       .attr('id', 'edgeMargin')
       .attr("transform", "translate(" + this.margins.left + "," + this.margins.top + ")")
 
-
-
     this.verticalScale = d3.scaleBand<number>().range([0, this.edgeWidth]).domain(d3.range(this.nodes.length));
+
+    // Draw Highlight Rows
+    this.edges.selectAll('.highlightRow')
+      .data(this.nodes)
+      .enter()
+      .append('rect')
+      .classed('highlightRow', true)
+      .attr('x', 0)
+      .attr('y', (d, i) => this.verticalScale(i))
+      .attr('width', this.edgeWidth + this.margins.right)
+      .attr('height', this.verticalScale.bandwidth())
+      .attr('fill', "#fff")
+      .on('mouseover', function() {
+        d3.select(this)
+          .classed('hovered', true);
+      })
+      .on('mouseout', function() {
+        d3.select(this)
+          .classed('hovered', false);
+      })
+
+
+
+
 
     // Draw each row (translating the y coordinate)
     this.edgeRows = this.edges.selectAll(".row")
@@ -250,19 +386,23 @@ class View {
       let rowIndex, colIndex;
       d3.selectAll(".row text").classed("active", (d, i) => {
         if (i == p.y) {
-          rowIndex = i;
+          rowIndex = i //+ that.nodes.length;
         }
         return i == p.y;
       });
       d3.selectAll(".column text").classed("active", (d, i) => {
         if (i == p.x) {
-          colIndex = i;
+          colIndex = i //+ that.nodes.length;
         }
         return i == p.x;
       });
+      // determine the updated
+      console.log(that.order, that.order[rowIndex], rowIndex, colIndex);
+      rowIndex = that.order[rowIndex] + that.nodes.length;
+      colIndex = that.order[colIndex] + that.nodes.length;
 
       d3.selectAll('.highlightRow')
-        .filter((d, i) => { return i === rowIndex || i == colIndex; })
+        .filter((d, i) => { return i === rowIndex || i == colIndex || i === rowIndex - that.nodes.length; })
         .classed('hovered', true)
 
       that.tooltip.transition().duration(200).style("opacity", .9);
@@ -286,6 +426,8 @@ class View {
         .classed('hovered', false);
     }
 
+    this.order = this.controller.getOrder();
+    console.log("Here", this.order);
 
     this.edgeColumns = this.edges.selectAll(".column")
       .data(this.matrix)
@@ -313,7 +455,7 @@ class View {
       .style("font-size", 8 + "px")
       .text((d, i) => this.nodes[i].abbr);
 
-    let val = this.edgeRows.append("line")
+    this.edgeRows.append("line")
       .attr("x2", this.edgeWidth + this.margins.right);
 
     this.edgeColumns.append("line")
@@ -329,15 +471,16 @@ class View {
   private tooltip: any;
   private barWidthScale: any;
   private columnScale: any;
+  private order: any;
 
   /**
    * [sort description]
    * @return [description]
    */
   sort(order) {
-    let newOrder = this.controller.changeOrder(order);
-    console.log(newOrder);
-    this.verticalScale.domain(newOrder);
+    this.order = this.controller.changeOrder(order);
+    console.log(this.order);
+    this.verticalScale.domain(this.order);
     console.log(d3.selectAll(".row"));
     d3.selectAll(".row")
       .transition()
@@ -346,7 +489,7 @@ class View {
       .attr("transform", (d, i) => { return "translate(0," + this.verticalScale(i) + ")"; })
       .selectAll(".cell")
       .delay((d) => { console.log(d); return this.verticalScale(d.x) * 4; })
-      .attr("x", (d) => { return this.verticalScale(d.x); });
+      .attr("x", (d) => this.verticalScale(d.x));
 
     console.log(this.attributes, this.attributeRows);
     this.attributeRows
@@ -372,7 +515,7 @@ class View {
    * @return [description]
    */
   initalizeAttributes() {
-    this.attributeWidth = 475 - this.margins.left - this.margins.right;
+    this.attributeWidth = 375 - this.margins.left - this.margins.right;
     this.attributeHeight = 600 - this.margins.top - this.margins.bottom;
 
     this.attributes = d3.select('#attributes').append("svg")
@@ -414,21 +557,25 @@ class View {
         return "translate(0," + this.verticalScale(i) + ")";
       });
 
-
-
-
     this.attributeRows.append("line")
       .attr("x1", 0)
       .attr("x2", this.attributeWidth)
       .attr('stroke', '2px')
       .attr('stroke-opacity', 0.3);
 
-    var columns = [
-      "familyBefore",
-      "familyAfter",
-      "individualBefore",
-      "individualAfter"
+    let columns = [
+      "followers_count",
+      "query_tweet_count",
+      "friends_count",
+      "statuses_count",
+      "listed_count",
+      "favourites_count",
+      "count_followers_in_query",
+      "screen_name",
+      "influential",
+      "original"
     ];
+
 
     var formatCurrency = d3.format("$,.0f"),
       formatNumber = d3.format(",.0f");
