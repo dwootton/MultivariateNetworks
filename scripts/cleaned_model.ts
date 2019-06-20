@@ -97,7 +97,10 @@ class Model {
         this.idMap = {};
 
         console.log(this.nodes)
+        this.order = this.changeOrder('screen_name');
+
         this.nodes = this.nodes.sort((a, b) => a.screen_name.localeCompare(b.screen_name));
+        console.log(this.nodes)
         this.nodes.forEach((node, index) => {
           console.log(index)
           node.index = index;
@@ -110,11 +113,11 @@ class Model {
 
         this.processData();
 
-        this.order = this.changeOrder('name');
+
         console.log(this.order, d3.range(this.nodes.length), "Data");
 
 
-        this.controller.updateData(this.nodes, this.edges, this.matrix);
+        this.controller.loadData(this.nodes, this.edges, this.matrix);
       })
     })
   }
@@ -126,12 +129,13 @@ class Model {
    */
   changeOrder(type: string) {
     let order;
-    if (type == 'name') {
-      order = d3.range(this.nodes.length).sort((a, b) => { return d3.ascending(this.nodes[a].screen_name, this.nodes[b].screen_name); })
+    if (type == 'screen_name') {
+      order = d3.range(this.nodes.length).sort((a, b) => { return this.nodes[a].screen_name.localeCompare(this.nodes[a].screen_name)})
     }
     else {
       order = d3.range(this.nodes.length).sort((a, b) => { return this.nodes[b][type] - this.nodes[a][type]; })
     }
+    this.order = order;
     return order;
   }
 
@@ -143,7 +147,6 @@ class Model {
     // generate a hashmap of id's?
     // Set up node data
     this.nodes.forEach((node, i) => {
-      node.index = i;
       node.count = 0;
 
       /* Numeric Conversion */
@@ -154,6 +157,7 @@ class Model {
       node.favourites_count = +node.favourites_count;
       node.count_followers_in_query = +node.count_followers_in_query;
       node.id = +node.id;
+      node.y = i;
 
       /* matrix used for edge attributes, otherwise should we hide */
       this.matrix[i] = d3.range(this.nodes.length).map(function(j) { return { x: j, y: i, z: 0 }; });
@@ -319,7 +323,16 @@ class View {
       .filter((d: any) => { return d.name == name })
       .classed('hovered', true);
   }
+  /**
+   * [clickedNode description]
+   * @return [description]
+   */
+  clickedNode(){
+    // Find node and highlight it in orange
+    // Find all of it's neighbors
+      // process links for neighbors?
 
+  }
   /**
    * Initalizes the edges view, renders SVG
    * @return None
@@ -351,13 +364,25 @@ class View {
       .attr('width', this.edgeWidth + this.margins.right)
       .attr('height', this.verticalScale.bandwidth())
       .attr('fill', "#fff")
-      .on('mouseover', function() {
+      .on('mouseover', function(d,index) {
         d3.select(this)
           .classed('hovered', true);
+          d3.selectAll('.highlightRow')
+              .filter((d : any, i) => { return d.index === index})
+              .classed('hovered', true)
       })
-      .on('mouseout', function() {
+      .on('mouseout', function(d,index) {
         d3.select(this)
           .classed('hovered', false);
+          d3.selectAll('.highlightRow')
+              .filter((d : any, i) => { return d.index === index})
+              .classed('hovered', false)
+      })
+      .on('click', (d)=>{
+        this.clickedNode(d.index);
+        // click node
+        // select node and turn orange ish
+        // highlight other nodes (add jumps?)
       })
 
 
@@ -402,6 +427,7 @@ class View {
       // Highlight attribute rows on hovered edge
       let rowIndex, colIndex;
       d3.selectAll(".row text").classed("active", (d, i) => {
+        console.log(d);
         if (i == p.y) {
           rowIndex = i //+ that.nodes.length;
         }
@@ -413,13 +439,14 @@ class View {
         }
         return i == p.x;
       });
+      console.log("look",that.order, that.order[rowIndex], rowIndex, colIndex);
+
+      rowIndex = that.order[rowIndex];
+      colIndex = that.order[colIndex];
       // determine the updated
-      console.log(that.order, that.order[rowIndex], rowIndex, colIndex);
-      rowIndex = that.order[rowIndex] + that.nodes.length;
-      colIndex = that.order[colIndex] + that.nodes.length;
 
       d3.selectAll('.highlightRow')
-        .filter((d, i) => { return i === rowIndex || i == colIndex || i === rowIndex - that.nodes.length; })
+        .filter((d : any, i) => { return d.y === rowIndex || d.y == colIndex })
         .classed('hovered', true)
 
       that.tooltip.transition().duration(200).style("opacity", .9);
@@ -439,6 +466,7 @@ class View {
     function mouseoutCell() {
       d3.selectAll("text").classed("active", false);
       that.tooltip.transition().duration(250).style("opacity", 0);
+
       d3.selectAll('.highlightRow')
         .classed('hovered', false);
     }
@@ -456,7 +484,7 @@ class View {
 
     this.edgeRows.append("text")
       .attr("class", "label")
-      .attr("x", -10)
+      .attr("x", 0)
       .attr("y", this.verticalScale.bandwidth() / 2)
       .attr("dy", ".32em")
       .attr("text-anchor", "end")
@@ -465,7 +493,7 @@ class View {
 
     this.edgeColumns.append("text")
       .attr("class", "label")
-      .attr("y", -this.verticalScale.bandwidth() / 2)
+      .attr("y", 0)
       .attr("dy", ".32em")
       .attr("text-anchor", "start")
       .style("font-size", 7.5 + "px")
@@ -483,6 +511,13 @@ class View {
       .style("opacity", 0);
 
   }
+  /**
+   * [mouseoverEdge description]
+   * @return [description]
+   */
+  mouseoverEdge(){
+
+  }
   private attributeRows: any;
   private tooltip: any;
   private barWidthScale: any;
@@ -498,9 +533,10 @@ class View {
     console.log(this.order);
     this.verticalScale.domain(this.order);
     console.log(d3.selectAll(".row"));
+    let transitionTime = 500;
     d3.selectAll(".row")
       .transition()
-      .duration(500)
+      .duration(transitionTime)
       .delay((d, i) => { return this.verticalScale(i) * 4; })
       .attr("transform", (d, i) => { return "translate(0," + this.verticalScale(i) + ")"; })
       .selectAll(".cell")
@@ -510,17 +546,20 @@ class View {
     console.log(this.attributes, this.attributeRows);
     this.attributeRows
       .transition()
-      .duration(500)
+      .duration(transitionTime)
       .delay((d, i) => { return this.verticalScale(i) * 4; })
       .attr("transform", (d, i) => { return "translate(0," + this.verticalScale(i) + ")"; })
 
-    /*d3.selectAll('.highlightRow')
+    // update each highlightRowsIndex
+    /*
+    d3.selectAll('.highlightRow')
       .transition()
-      .duration(500)
+      .duration(transitionTime)
+      .attr("transform", (d, i) => { return "translate(0," + this.verticalScale(i) + ")"; })
       .delay((d, i) => { return this.verticalScale(i) * 4; })
-      .attr('fill',(d,i)=>{console.log(d);return i%2 == 0 ? "#aaa" : "#bbb"})*/
+      .attr('fill',(d,i)=>{console.log(this.order[i]);return this.order[i]%2 == 0 ? "#fff" : "#eee"})*/
 
-    var t = this.edges.transition().duration(500);
+    var t = this.edges.transition().duration(transitionTime);
     t.selectAll(".column")
       .delay((d, i) => { return this.verticalScale(i) * 4; })
       .attr("transform", (d, i) => { return "translate(" + this.verticalScale(i) + ")rotate(-90)"; });
@@ -531,7 +570,7 @@ class View {
    * @return [description]
    */
   initalizeAttributes() {
-    this.attributeWidth = 475 - this.margins.left - this.margins.right;
+    this.attributeWidth = 575 - this.margins.left - this.margins.right;
     this.attributeHeight = 600 - this.margins.top - this.margins.bottom;
 
     this.attributes = d3.select('#attributes').append("svg")
@@ -553,17 +592,24 @@ class View {
       .attr('width', this.attributeWidth)
       .attr('height', this.verticalScale.bandwidth())
       .attr('fill', (d, i) => { return i % 2 == 0 ? "#fff" : "#eee" })
-      .on('mouseover', function() {
+      .on('mouseover', function(d,index) {
         d3.select(this)
           .classed('hovered', true);
+
+
+        d3.selectAll('.highlightRow')
+            .filter((d : any, i) => { return d.index === index})
+            .classed('hovered', true)
       })
       .on('mouseout', function() {
-        d3.select(this)
-          .classed('hovered', false);
+
+          d3.selectAll('.highlightRow')
+              .classed('hovered', false)
       })
 
     let barMargin = { top: 1, bottom: 1, left: 5, right: 5 }
     let barHeight = this.verticalScale.bandwidth() - barMargin.top - barMargin.bottom;
+
     // Draw each row (translating the y coordinate)
     this.attributeRows = this.attributes.selectAll(".row")
       .data(this.nodes)
@@ -811,7 +857,7 @@ class Controller {
    * Passes the processed edge and node data to the view.
    * @return None
    */
-  updateData(nodes: any, edges: any, matrix: any) {
+  loadData(nodes: any, edges: any, matrix: any) {
     this.view.loadData(nodes, edges, matrix);
   }
 

@@ -9,7 +9,9 @@ var Model = /** @class */ (function () {
                 _this.nodes = data.nodes;
                 _this.idMap = {};
                 console.log(_this.nodes);
+                _this.order = _this.changeOrder('screen_name');
                 _this.nodes = _this.nodes.sort(function (a, b) { return a.screen_name.localeCompare(b.screen_name); });
+                console.log(_this.nodes);
                 _this.nodes.forEach(function (node, index) {
                     console.log(index);
                     node.index = index;
@@ -19,9 +21,8 @@ var Model = /** @class */ (function () {
                 console.log(_this.edges);
                 _this.controller = controller;
                 _this.processData();
-                _this.order = _this.changeOrder('name');
                 console.log(_this.order, d3.range(_this.nodes.length), "Data");
-                _this.controller.updateData(_this.nodes, _this.edges, _this.matrix);
+                _this.controller.loadData(_this.nodes, _this.edges, _this.matrix);
             });
         });
     }
@@ -89,12 +90,13 @@ var Model = /** @class */ (function () {
     Model.prototype.changeOrder = function (type) {
         var _this = this;
         var order;
-        if (type == 'name') {
-            order = d3.range(this.nodes.length).sort(function (a, b) { return d3.ascending(_this.nodes[a].screen_name, _this.nodes[b].screen_name); });
+        if (type == 'screen_name') {
+            order = d3.range(this.nodes.length).sort(function (a, b) { return _this.nodes[a].screen_name.localeCompare(_this.nodes[a].screen_name); });
         }
         else {
             order = d3.range(this.nodes.length).sort(function (a, b) { return _this.nodes[b][type] - _this.nodes[a][type]; });
         }
+        this.order = order;
         return order;
     };
     /**
@@ -106,7 +108,6 @@ var Model = /** @class */ (function () {
         // generate a hashmap of id's?
         // Set up node data
         this.nodes.forEach(function (node, i) {
-            node.index = i;
             node.count = 0;
             /* Numeric Conversion */
             node.followers_count = +node.followers_count;
@@ -116,6 +117,7 @@ var Model = /** @class */ (function () {
             node.favourites_count = +node.favourites_count;
             node.count_followers_in_query = +node.count_followers_in_query;
             node.id = +node.id;
+            node.y = i;
             /* matrix used for edge attributes, otherwise should we hide */
             _this.matrix[i] = d3.range(_this.nodes.length).map(function (j) { return { x: j, y: i, z: 0 }; });
         });
@@ -239,6 +241,15 @@ var View = /** @class */ (function () {
             .classed('hovered', true);
     };
     /**
+     * [clickedNode description]
+     * @return [description]
+     */
+    View.prototype.clickedNode = function () {
+        // Find node and highlight it in orange
+        // Find all of it's neighbors
+        // process links for neighbors?
+    };
+    /**
      * Initalizes the edges view, renders SVG
      * @return None
      */
@@ -266,13 +277,25 @@ var View = /** @class */ (function () {
             .attr('width', this.edgeWidth + this.margins.right)
             .attr('height', this.verticalScale.bandwidth())
             .attr('fill', "#fff")
-            .on('mouseover', function () {
+            .on('mouseover', function (d, index) {
             d3.select(this)
                 .classed('hovered', true);
+            d3.selectAll('.highlightRow')
+                .filter(function (d, i) { return d.index === index; })
+                .classed('hovered', true);
         })
-            .on('mouseout', function () {
+            .on('mouseout', function (d, index) {
             d3.select(this)
                 .classed('hovered', false);
+            d3.selectAll('.highlightRow')
+                .filter(function (d, i) { return d.index === index; })
+                .classed('hovered', false);
+        })
+            .on('click', function (d) {
+            _this.clickedNode(d.index);
+            // click node
+            // select node and turn orange ish
+            // highlight other nodes (add jumps?)
         });
         // Draw each row (translating the y coordinate)
         this.edgeRows = this.edges.selectAll(".row")
@@ -311,6 +334,7 @@ var View = /** @class */ (function () {
             // Highlight attribute rows on hovered edge
             var rowIndex, colIndex;
             d3.selectAll(".row text").classed("active", function (d, i) {
+                console.log(d);
                 if (i == p.y) {
                     rowIndex = i; //+ that.nodes.length;
                 }
@@ -322,12 +346,12 @@ var View = /** @class */ (function () {
                 }
                 return i == p.x;
             });
+            console.log("look", that.order, that.order[rowIndex], rowIndex, colIndex);
+            rowIndex = that.order[rowIndex];
+            colIndex = that.order[colIndex];
             // determine the updated
-            console.log(that.order, that.order[rowIndex], rowIndex, colIndex);
-            rowIndex = that.order[rowIndex] + that.nodes.length;
-            colIndex = that.order[colIndex] + that.nodes.length;
             d3.selectAll('.highlightRow')
-                .filter(function (d, i) { return i === rowIndex || i == colIndex || i === rowIndex - that.nodes.length; })
+                .filter(function (d, i) { return d.y === rowIndex || d.y == colIndex; })
                 .classed('hovered', true);
             that.tooltip.transition().duration(200).style("opacity", .9);
             var matrix = this.getScreenCTM()
@@ -356,7 +380,7 @@ var View = /** @class */ (function () {
         });
         this.edgeRows.append("text")
             .attr("class", "label")
-            .attr("x", -10)
+            .attr("x", 0)
             .attr("y", this.verticalScale.bandwidth() / 2)
             .attr("dy", ".32em")
             .attr("text-anchor", "end")
@@ -364,7 +388,7 @@ var View = /** @class */ (function () {
             .text(function (d, i) { return _this.nodes[i].screen_name; });
         this.edgeColumns.append("text")
             .attr("class", "label")
-            .attr("y", -this.verticalScale.bandwidth() / 2)
+            .attr("y", 0)
             .attr("dy", ".32em")
             .attr("text-anchor", "start")
             .style("font-size", 7.5 + "px")
@@ -379,6 +403,12 @@ var View = /** @class */ (function () {
             .style("opacity", 0);
     };
     /**
+     * [mouseoverEdge description]
+     * @return [description]
+     */
+    View.prototype.mouseoverEdge = function () {
+    };
+    /**
      * [sort description]
      * @return [description]
      */
@@ -388,9 +418,10 @@ var View = /** @class */ (function () {
         console.log(this.order);
         this.verticalScale.domain(this.order);
         console.log(d3.selectAll(".row"));
+        var transitionTime = 500;
         d3.selectAll(".row")
             .transition()
-            .duration(500)
+            .duration(transitionTime)
             .delay(function (d, i) { return _this.verticalScale(i) * 4; })
             .attr("transform", function (d, i) { return "translate(0," + _this.verticalScale(i) + ")"; })
             .selectAll(".cell")
@@ -399,15 +430,18 @@ var View = /** @class */ (function () {
         console.log(this.attributes, this.attributeRows);
         this.attributeRows
             .transition()
-            .duration(500)
+            .duration(transitionTime)
             .delay(function (d, i) { return _this.verticalScale(i) * 4; })
             .attr("transform", function (d, i) { return "translate(0," + _this.verticalScale(i) + ")"; });
-        /*d3.selectAll('.highlightRow')
+        // update each highlightRowsIndex
+        /*
+        d3.selectAll('.highlightRow')
           .transition()
-          .duration(500)
+          .duration(transitionTime)
+          .attr("transform", (d, i) => { return "translate(0," + this.verticalScale(i) + ")"; })
           .delay((d, i) => { return this.verticalScale(i) * 4; })
-          .attr('fill',(d,i)=>{console.log(d);return i%2 == 0 ? "#aaa" : "#bbb"})*/
-        var t = this.edges.transition().duration(500);
+          .attr('fill',(d,i)=>{console.log(this.order[i]);return this.order[i]%2 == 0 ? "#fff" : "#eee"})*/
+        var t = this.edges.transition().duration(transitionTime);
         t.selectAll(".column")
             .delay(function (d, i) { return _this.verticalScale(i) * 4; })
             .attr("transform", function (d, i) { return "translate(" + _this.verticalScale(i) + ")rotate(-90)"; });
@@ -418,7 +452,7 @@ var View = /** @class */ (function () {
      */
     View.prototype.initalizeAttributes = function () {
         var _this = this;
-        this.attributeWidth = 475 - this.margins.left - this.margins.right;
+        this.attributeWidth = 575 - this.margins.left - this.margins.right;
         this.attributeHeight = 600 - this.margins.top - this.margins.bottom;
         this.attributes = d3.select('#attributes').append("svg")
             .attr("width", this.attributeWidth + this.margins.left + this.margins.right)
@@ -437,12 +471,15 @@ var View = /** @class */ (function () {
             .attr('width', this.attributeWidth)
             .attr('height', this.verticalScale.bandwidth())
             .attr('fill', function (d, i) { return i % 2 == 0 ? "#fff" : "#eee"; })
-            .on('mouseover', function () {
+            .on('mouseover', function (d, index) {
             d3.select(this)
+                .classed('hovered', true);
+            d3.selectAll('.highlightRow')
+                .filter(function (d, i) { return d.index === index; })
                 .classed('hovered', true);
         })
             .on('mouseout', function () {
-            d3.select(this)
+            d3.selectAll('.highlightRow')
                 .classed('hovered', false);
         });
         var barMargin = { top: 1, bottom: 1, left: 5, right: 5 };
@@ -629,7 +666,7 @@ var Controller = /** @class */ (function () {
      * Passes the processed edge and node data to the view.
      * @return None
      */
-    Controller.prototype.updateData = function (nodes, edges, matrix) {
+    Controller.prototype.loadData = function (nodes, edges, matrix) {
         this.view.loadData(nodes, edges, matrix);
     };
     /**
