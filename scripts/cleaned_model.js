@@ -8,13 +8,13 @@ var Model = /** @class */ (function () {
                 _this.matrix = [];
                 _this.nodes = data.nodes;
                 _this.idMap = {};
+                console.log(_this.nodes);
+                _this.nodes = _this.nodes.sort(function (a, b) { return a.screen_name.localeCompare(b.screen_name); });
                 _this.nodes.forEach(function (node, index) {
                     console.log(index);
                     node.index = index;
                     _this.idMap[node.id] = index;
                 });
-                console.log(_this.nodes);
-                _this.nodes = _this.nodes.sort(function (a, b) { return a.screen_name.localeCompare(b.screen_name); });
                 _this.edges = data.links;
                 console.log(_this.edges);
                 _this.controller = controller;
@@ -123,8 +123,18 @@ var Model = /** @class */ (function () {
         // Convert links to matrix; count character occurrences.
         this.edges.forEach(function (link) {
             console.log(link);
+            var addValue = 0;
+            if (link.type == "reply") {
+                addValue = 3;
+            }
+            else if (link.type == "retweet") {
+                addValue = 2;
+            }
+            else {
+                addValue = 1;
+            }
             /* could be used for varying edge types */
-            _this.matrix[_this.idMap[link.source]][_this.idMap[link.target]].z += 1;
+            _this.matrix[_this.idMap[link.source]][_this.idMap[link.target]].z += addValue;
             //this.matrix[this.idMap[link.target]][this.idMap[link.source]].z += 1;
             //matrix[link.source][link.source].z += link.value;
             //matrix[link.target][link.target].z += link.value;
@@ -279,9 +289,19 @@ var View = /** @class */ (function () {
             .attr("x", function (d) { return _this.verticalScale(d.x); })
             .attr("width", this.verticalScale.bandwidth())
             .attr("height", this.verticalScale.bandwidth())
-            /*.style("fill-opacity", d => opacityScale(d.z)).style("fill", d => {
-              return nodes[d.x].group == nodes[d.y].group ? colorScale(nodes[d.x].group) : "grey";
-            }) */
+            //.style("fill", d => this.opacityScale(d.z))
+            .style("fill", function (d) {
+            console.log(d);
+            if (d.z == 3) {
+                return "green"; // reply
+            }
+            else if (d.z == 2) {
+                return "black"; // retweet
+            }
+            else if (d.z == 1) {
+                return "orange"; // other
+            }
+        })
             .on("mouseover", mouseoverCell)
             .on("mouseout", mouseoutCell);
         var that = this;
@@ -341,7 +361,7 @@ var View = /** @class */ (function () {
             .attr("dy", ".32em")
             .attr("text-anchor", "end")
             .style("font-size", 8 + "px")
-            .text(function (d, i) { return _this.nodes[i].abbr; });
+            .text(function (d, i) { return _this.nodes[i].screen_name; });
         this.edgeColumns.append("text")
             .attr("class", "label")
             .attr("y", 100)
@@ -349,7 +369,7 @@ var View = /** @class */ (function () {
             .attr("dy", ".32em")
             .attr("text-anchor", "start")
             .style("font-size", 8 + "px")
-            .text(function (d, i) { return _this.nodes[i].abbr; });
+            .text(function (d, i) { return _this.nodes[i].screen_name; });
         this.edgeRows.append("line")
             .attr("x2", this.edgeWidth + this.margins.right);
         this.edgeColumns.append("line")
@@ -426,8 +446,8 @@ var View = /** @class */ (function () {
             d3.select(this)
                 .classed('hovered', false);
         });
-        var barMargin = { top: 2, bottom: 1, left: 5, right: 5 };
-        var barHeight = 10 - barMargin.top - barMargin.bottom;
+        var barMargin = { top: 1, bottom: 1, left: 5, right: 5 };
+        var barHeight = this.verticalScale.bandwidth() - barMargin.top - barMargin.bottom;
         // Draw each row (translating the y coordinate)
         this.attributeRows = this.attributes.selectAll(".row")
             .data(this.nodes)
