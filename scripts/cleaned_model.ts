@@ -685,6 +685,9 @@ class View {
       console.log(attributeScales);
     })
 
+
+
+
     // need max and min of each column
     /*this.barWidthScale = d3.scaleLinear()
       .domain([0, 1400])
@@ -699,6 +702,23 @@ class View {
     console.log(columnRange);
     this.columnScale.range(columnRange);
 
+    for (let [column, scale] of Object.entries(attributeScales)) {
+      console.log(column, scale, this.columnScale(column));
+      this.attributes.append("g")
+        .attr("class", "attr-axis")
+        .attr("transform", "translate(" + this.columnScale(column) + "," + -15 + ")")
+        .call(d3.axisTop(scale)
+          .tickValues(scale.domain())
+          .tickFormat((d) => {
+            if ((d / 1000) >= 1) {
+              d = Math.round(d / 1000) + "K";
+            }
+            return d;
+          }))
+          .selectAll('text')
+            .style("text-anchor",function(d,i){ return i%2 ? "end" : "start"})
+        ;
+    }
 
 
 
@@ -754,7 +774,7 @@ class View {
 
     this.columnNames = {
       "followers_count": "Followers",
-      "query_tweet_count": "Tweet",
+      "query_tweet_count": "Tweets",
       "friends_count": "Friends",
       "statuses_count": "Statuses ",
       "listed_count": "Listed",
@@ -770,7 +790,7 @@ class View {
       .enter()
       .append('text')
       .classed('header', true)
-      .attr('y', -30)
+      .attr('y', -45)
       .attr('x', (d) => this.columnScale(d) + barMargin.left)
       .style('font-size', '12px')
       .attr('text-anchor', 'left')

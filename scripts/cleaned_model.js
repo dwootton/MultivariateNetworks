@@ -551,6 +551,23 @@ var View = /** @class */ (function () {
           .range([0, 140]);*/
         console.log(columnRange);
         this.columnScale.range(columnRange);
+        for (var _i = 0, _a = Object.entries(attributeScales); _i < _a.length; _i++) {
+            var _b = _a[_i], column = _b[0], scale = _b[1];
+            console.log(column, scale, this.columnScale(column));
+            this.attributes.append("g")
+                .attr("class", "attr-axis")
+                .attr("transform", "translate(" + this.columnScale(column) + "," + -15 + ")")
+                .call(d3.axisTop(scale)
+                .tickValues(scale.domain())
+                .tickFormat(function (d) {
+                if ((d / 1000) >= 1) {
+                    d = Math.round(d / 1000) + "K";
+                }
+                return d;
+            }))
+                .selectAll('text')
+                .style("text-anchor", function (d, i) { return i % 2 ? "end" : "start"; });
+        }
         /* Create data columns data */
         columns.forEach(function (c) {
             console.log(c);
@@ -605,7 +622,7 @@ var View = /** @class */ (function () {
             .enter()
             .append('text')
             .classed('header', true)
-            .attr('y', -30)
+            .attr('y', -45)
             .attr('x', function (d) { return _this.columnScale(d) + barMargin.left; })
             .style('font-size', '12px')
             .attr('text-anchor', 'left')
