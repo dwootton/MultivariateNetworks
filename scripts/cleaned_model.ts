@@ -130,7 +130,7 @@ class Model {
   changeOrder(type: string) {
     let order;
     if (type == 'screen_name') {
-      order = d3.range(this.nodes.length).sort((a, b) => { return this.nodes[a].screen_name.localeCompare(this.nodes[a].screen_name)})
+      order = d3.range(this.nodes.length).sort((a, b) => { return this.nodes[a].screen_name.localeCompare(this.nodes[a].screen_name) })
     }
     else {
       order = d3.range(this.nodes.length).sort((a, b) => { return this.nodes[b][type] - this.nodes[a][type]; })
@@ -296,9 +296,9 @@ class View {
    * @return [description]
    */
   renderView() {
+
     this.viewWidth = 1000;
 
-    //this.viewHeight =
     this.margins = { left: 65, top: 65, right: 10, bottom: 10 };
 
     this.initalizeEdges();
@@ -327,10 +327,10 @@ class View {
    * [clickedNode description]
    * @return [description]
    */
-  clickedNode(){
+  clickedNode() {
     // Find node and highlight it in orange
     // Find all of it's neighbors
-      // process links for neighbors?
+    // process links for neighbors?
 
   }
   /**
@@ -343,11 +343,13 @@ class View {
 
     // Float edges so put edges and attr on same place
     d3.select('#topology').style('float', 'left');
-
+    let width = this.edgeWidth + this.margins.left + this.margins.right;
+    let height = this.edgeHeight + this.margins.top + this.margins.bottom;
     this.edges = d3.select('#topology').append("svg")
-      .attr("width", this.edgeWidth + this.margins.left + this.margins.right)
-      .attr("height", this.edgeHeight + this.margins.top + this.margins.bottom)
+      .attr("viewBox", "0 0 " + width + " " + height + "")
+      .attr("preserveAspectRatio", "xMinYMin meet")
       .append("g")
+      .classed("svg-content", true)
       .attr('id', 'edgeMargin')
       .attr("transform", "translate(" + this.margins.left + "," + this.margins.top + ")")
 
@@ -364,21 +366,21 @@ class View {
       .attr('width', this.edgeWidth + this.margins.right)
       .attr('height', this.verticalScale.bandwidth())
       .attr('fill', "#fff")
-      .on('mouseover', function(d,index) {
+      .on('mouseover', function(d, index) {
         d3.select(this)
           .classed('hovered', true);
-          d3.selectAll('.highlightRow')
-              .filter((d : any, i) => { return d.index === index})
-              .classed('hovered', true)
+        d3.selectAll('.highlightRow')
+          .filter((d: any, i) => { return d.index === index })
+          .classed('hovered', true)
       })
-      .on('mouseout', function(d,index) {
+      .on('mouseout', function(d, index) {
         d3.select(this)
           .classed('hovered', false);
-          d3.selectAll('.highlightRow')
-              .filter((d : any, i) => { return d.index === index})
-              .classed('hovered', false)
+        d3.selectAll('.highlightRow')
+          .filter((d: any, i) => { return d.index === index })
+          .classed('hovered', false)
       })
-      .on('click', (d)=>{
+      .on('click', (d) => {
         this.clickedNode(d.index);
         // click node
         // select node and turn orange ish
@@ -439,14 +441,14 @@ class View {
         }
         return i == p.x;
       });
-      console.log("look",that.order, that.order[rowIndex], rowIndex, colIndex);
+      console.log("look", that.order, that.order[rowIndex], rowIndex, colIndex);
 
       rowIndex = that.order[rowIndex];
       colIndex = that.order[colIndex];
       // determine the updated
 
       d3.selectAll('.highlightRow')
-        .filter((d : any, i) => { return d.y === rowIndex || d.y == colIndex })
+        .filter((d: any, i) => { return d.y === rowIndex || d.y == colIndex })
         .classed('hovered', true)
 
       that.tooltip.transition().duration(200).style("opacity", .9);
@@ -515,7 +517,7 @@ class View {
    * [mouseoverEdge description]
    * @return [description]
    */
-  mouseoverEdge(){
+  mouseoverEdge() {
 
   }
   private attributeRows: any;
@@ -570,14 +572,18 @@ class View {
    * @return [description]
    */
   initalizeAttributes() {
-    this.attributeWidth = 575 - this.margins.left - this.margins.right;
+    this.attributeWidth = 600 - this.margins.left - this.margins.right;
     this.attributeHeight = 600 - this.margins.top - this.margins.bottom;
 
+    let width = this.attributeWidth + this.margins.left + this.margins.right;
+    let height = this.attributeHeight + this.margins.top + this.margins.bottom;
+
     this.attributes = d3.select('#attributes').append("svg")
-      .attr("width", this.attributeWidth + this.margins.left + this.margins.right)
-      .attr("height", this.attributeHeight + this.margins.top + this.margins.bottom)
+      .attr("viewBox", "0 0 " + width + " " + height + "")
+      .attr("preserveAspectRatio", "xMinYMin meet")
       .append("g")
-      .attr('id', 'edgeMargin')
+      .classed("svg-content", true)
+      .attr('id', 'attributeMargin')
       .attr("transform", "translate(" + 0 + "," + this.margins.top + ")");
 
 
@@ -592,19 +598,19 @@ class View {
       .attr('width', this.attributeWidth)
       .attr('height', this.verticalScale.bandwidth())
       .attr('fill', (d, i) => { return i % 2 == 0 ? "#fff" : "#eee" })
-      .on('mouseover', function(d,index) {
+      .on('mouseover', function(d, index) {
         d3.select(this)
           .classed('hovered', true);
 
 
         d3.selectAll('.highlightRow')
-            .filter((d : any, i) => { return d.index === index})
-            .classed('hovered', true)
+          .filter((d: any, i) => { return d.index === index })
+          .classed('hovered', true)
       })
       .on('mouseout', function() {
 
-          d3.selectAll('.highlightRow')
-              .classed('hovered', false)
+        d3.selectAll('.highlightRow')
+          .classed('hovered', false)
       })
 
     let barMargin = { top: 1, bottom: 1, left: 5, right: 5 }
@@ -670,9 +676,9 @@ class View {
         let range = d3.extent(this.nodes, (d) => { return d[col] })
         colWidth = 50;
         console.log(range);
-        let scale = d3.scaleLinear().domain(range).range([barMargin.left, colWidth-barMargin.right]);
+        let scale = d3.scaleLinear().domain(range).range([barMargin.left, colWidth - barMargin.right]);
         console.log(scale);
-        attributeScales[col] =scale;
+        attributeScales[col] = scale;
       }
 
       xRange += colWidth;

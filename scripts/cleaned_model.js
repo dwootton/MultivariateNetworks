@@ -218,7 +218,6 @@ var View = /** @class */ (function () {
      */
     View.prototype.renderView = function () {
         this.viewWidth = 1000;
-        //this.viewHeight =
         this.margins = { left: 65, top: 65, right: 10, bottom: 10 };
         this.initalizeEdges();
         this.initalizeAttributes();
@@ -259,10 +258,13 @@ var View = /** @class */ (function () {
         this.edgeHeight = 600 - this.margins.top - this.margins.bottom;
         // Float edges so put edges and attr on same place
         d3.select('#topology').style('float', 'left');
+        var width = this.edgeWidth + this.margins.left + this.margins.right;
+        var height = this.edgeHeight + this.margins.top + this.margins.bottom;
         this.edges = d3.select('#topology').append("svg")
-            .attr("width", this.edgeWidth + this.margins.left + this.margins.right)
-            .attr("height", this.edgeHeight + this.margins.top + this.margins.bottom)
+            .attr("viewBox", "0 0 " + width + " " + height + "")
+            .attr("preserveAspectRatio", "xMinYMin meet")
             .append("g")
+            .classed("svg-content", true)
             .attr('id', 'edgeMargin')
             .attr("transform", "translate(" + this.margins.left + "," + this.margins.top + ")");
         this.verticalScale = d3.scaleBand().range([0, this.edgeWidth]).domain(d3.range(this.nodes.length));
@@ -452,13 +454,16 @@ var View = /** @class */ (function () {
      */
     View.prototype.initalizeAttributes = function () {
         var _this = this;
-        this.attributeWidth = 575 - this.margins.left - this.margins.right;
+        this.attributeWidth = 600 - this.margins.left - this.margins.right;
         this.attributeHeight = 600 - this.margins.top - this.margins.bottom;
+        var width = this.attributeWidth + this.margins.left + this.margins.right;
+        var height = this.attributeHeight + this.margins.top + this.margins.bottom;
         this.attributes = d3.select('#attributes').append("svg")
-            .attr("width", this.attributeWidth + this.margins.left + this.margins.right)
-            .attr("height", this.attributeHeight + this.margins.top + this.margins.bottom)
+            .attr("viewBox", "0 0 " + width + " " + height + "")
+            .attr("preserveAspectRatio", "xMinYMin meet")
             .append("g")
-            .attr('id', 'edgeMargin')
+            .classed("svg-content", true)
+            .attr('id', 'attributeMargin')
             .attr("transform", "translate(" + 0 + "," + this.margins.top + ")");
         // add zebras and highlight rows
         this.attributes.selectAll('.highlightRow')

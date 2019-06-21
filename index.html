@@ -4,11 +4,19 @@
 
 <style>
 .container {
-  float: left;
+  /*
   overflow: scroll;
   display:inline-block;
   height:600px;
   width:600px;
+  */
+  float: left;
+  display: inline-block;
+  position: relative;
+  width: 50%;
+  padding-bottom: 100%;
+  vertical-align: top;
+  overflow: hidden;
 }
 /* Hiding topology's scrollbar */
 #topology {
@@ -52,7 +60,16 @@ line {
   opacity: 0.3;
 }
 
+#interactiveFreeFormMain{
 
+}
+
+.svg-content {
+    display: inline-block;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
 </style>
 
 <!--<script src="/Libraries/d3.js"></script>
@@ -76,7 +93,6 @@ line {
       <option value="favourites_count">by Favourites</option>
       <option value="count_followers_in_query">by Followers in Network</option>
     </select>
-
   </p>
 </aside>
 
