@@ -2,6 +2,7 @@
 var Model = /** @class */ (function () {
     function Model(controller) {
         var _this = this;
+        this.controller = controller;
         d3.json("scripts/Eurovis2019Network.json").then(function (network) {
             d3.json("scripts/Eurovis2019Tweets.json").then(function (tweets) {
                 var data = _this.grabTwitterData(network, tweets);
@@ -27,6 +28,7 @@ var Model = /** @class */ (function () {
         });
     }
     Model.prototype.grabTwitterData = function (graph, tweets) {
+        var _this = this;
         var toRemove = [];
         console.log(graph, tweets);
         var newGraph = { 'nodes': [], 'links': [] };
@@ -34,23 +36,25 @@ var Model = /** @class */ (function () {
         tweets = tweets.tweets;
         tweets.map(function (tweet) {
             //if a tweet mentions a person, create a 'mentions' edge between the tweeter, and the mentioned person.
-            tweet.entities.user_mentions.map(function (mention) {
-                var source = graph.nodes.find(function (n) { return n.id === tweet.user.id; });
-                var target = graph.nodes.find(function (n) { return n.id === mention.id; });
-                if (source && target) {
-                    var link = { 'source': source.id, 'target': target.id, 'type': 'mentions' };
-                    newGraph.links.push(link);
-                    if (!newGraph.nodes.find(function (n) { return n === source; })) {
-                        newGraph.nodes.push(source);
+            if (_this.controller.configuration.edgeTypes.includes("mention")) {
+                tweet.entities.user_mentions.map(function (mention) {
+                    var source = graph.nodes.find(function (n) { return n.id === tweet.user.id; });
+                    var target = graph.nodes.find(function (n) { return n.id === mention.id; });
+                    if (source && target) {
+                        var link = { 'source': source.id, 'target': target.id, 'type': 'mentions' };
+                        newGraph.links.push(link);
+                        if (!newGraph.nodes.find(function (n) { return n === source; })) {
+                            newGraph.nodes.push(source);
+                        }
+                        if (!newGraph.nodes.find(function (n) { return n === target; })) {
+                            newGraph.nodes.push(target);
+                        }
                     }
-                    if (!newGraph.nodes.find(function (n) { return n === target; })) {
-                        newGraph.nodes.push(target);
-                    }
-                }
-                // console.log('link',link)
-            });
+                    // console.log('link',link)
+                });
+            }
             //if a tweet retweets another retweet, create a 'retweeted' edge between the re-tweeter and the original tweeter.
-            if (tweet.retweeted_status) {
+            if (tweet.retweeted_status && _this.controller.configuration.edgeTypes.includes("retweet")) {
                 var source_1 = graph.nodes.find(function (n) { return n.id === tweet.user.id; });
                 var target_1 = graph.nodes.find(function (n) { return n.id === tweet.retweeted_status.user.id; });
                 if (source_1 && target_1) {
@@ -65,7 +69,7 @@ var Model = /** @class */ (function () {
                 }
             }
             //if a tweet is a reply to another tweet, create an edge between the original tweeter and the author of the current tweet.
-            if (tweet.in_reply_to_user_id_str) {
+            if (tweet.in_reply_to_user_id_str && _this.controller.configuration.edgeTypes.includes("reply")) {
                 var source_2 = graph.nodes.find(function (n) { return n.id === tweet.user.id; });
                 var target_2 = graph.nodes.find(function (n) { return n.id === tweet.in_reply_to_user_id; });
                 if (source_2 && target_2) {

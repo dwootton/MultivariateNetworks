@@ -25,30 +25,33 @@ class Model {
     tweets.map((tweet) => {
 
       //if a tweet mentions a person, create a 'mentions' edge between the tweeter, and the mentioned person.
-      tweet.entities.user_mentions.map(mention => {
-        let source = graph.nodes.find(n => n.id === tweet.user.id);
-        let target = graph.nodes.find(n => n.id === mention.id);
+      if(this.controller.configuration.edgeTypes.includes("mention")){
+        tweet.entities.user_mentions.map(mention => {
+          let source = graph.nodes.find(n => n.id === tweet.user.id);
+          let target = graph.nodes.find(n => n.id === mention.id);
 
 
-        if (source && target) {
-          let link = { 'source': source.id, 'target': target.id, 'type': 'mentions' }
+          if (source && target) {
+            let link = { 'source': source.id, 'target': target.id, 'type': 'mentions' }
 
-          newGraph.links.push(link);
-          if (!newGraph.nodes.find(n => n === source)) {
-            newGraph.nodes.push(source);
+            newGraph.links.push(link);
+            if (!newGraph.nodes.find(n => n === source)) {
+              newGraph.nodes.push(source);
+            }
+            if (!newGraph.nodes.find(n => n === target)) {
+              newGraph.nodes.push(target);
+            }
           }
-          if (!newGraph.nodes.find(n => n === target)) {
-            newGraph.nodes.push(target);
-          }
-        }
-        // console.log('link',link)
+          // console.log('link',link)
 
-      })
+        })
+      }
+
 
 
 
       //if a tweet retweets another retweet, create a 'retweeted' edge between the re-tweeter and the original tweeter.
-      if (tweet.retweeted_status) {
+      if (tweet.retweeted_status && this.controller.configuration.edgeTypes.includes("retweet")) {
         let source = graph.nodes.find(n => n.id === tweet.user.id);
         let target = graph.nodes.find(n => n.id === tweet.retweeted_status.user.id);
 
@@ -68,7 +71,7 @@ class Model {
       }
 
       //if a tweet is a reply to another tweet, create an edge between the original tweeter and the author of the current tweet.
-      if (tweet.in_reply_to_user_id_str) {
+      if (tweet.in_reply_to_user_id_str && this.controller.configuration.edgeTypes.includes("reply")) {
         let source = graph.nodes.find(n => n.id === tweet.user.id);
         let target = graph.nodes.find(n => n.id === tweet.in_reply_to_user_id);
 
@@ -89,6 +92,7 @@ class Model {
     return newGraph;
   }
   constructor(controller: any) {
+    this.controller = controller;
     d3.json("scripts/Eurovis2019Network.json").then((network: any) => {
       d3.json("scripts/Eurovis2019Tweets.json").then((tweets: any) => {
         let data = this.grabTwitterData(network, tweets);

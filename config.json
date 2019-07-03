@@ -4,6 +4,7 @@
   "undirectedGraph": "../public/data/network_small_undirected.json",
   "isDirected": true,
   "fixedPositions": null,
+  "edgeTypes": ["retweet","mention","reply"],
   "state": {
     "selectedNodes": [],
     "permamentlySelectedNodes": [],
