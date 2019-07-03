@@ -30,7 +30,8 @@
     },
     "edgeColors": {
       "retweet": "#427d9b",
-      "mention": "#88419d"
+      "mentions": "#88419d",
+      "reply":"#3392cf"
     }
   }
 }

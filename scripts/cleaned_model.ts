@@ -196,7 +196,7 @@ class Model {
       /* could be used for varying edge types */
       this.matrix[this.idMap[link.source]][this.idMap[link.target]].z += addValue;
       this.matrix[this.idMap[link.source]].count += 1;
-      if(!this.controller.configuration.isDirected){
+      if(this.controller.configuration.isDirected){
         this.matrix[this.idMap[link.target]][this.idMap[link.source]].z += addValue;
         this.matrix[this.idMap[link.target]].count += 1;
       }
@@ -372,7 +372,7 @@ class View {
 
     this.verticalScale = d3.scaleBand<number>().range([0, this.edgeWidth]).domain(d3.range(this.nodes.length));
 
-    // Draw Highlight Rows
+    /* Draw Highlight Rows
     this.edges//.select('#highlightLayer')
       .append('g')
       .attr('id','highlightLayer')
@@ -417,7 +417,7 @@ class View {
         .attr('y', 0 )
         .attr('width', this.verticalScale.bandwidth())
         .attr('height', this.edgeHeight + this.margins.bottom)
-        .attr('fill', "#fff")
+        .attr('fill', (d, i) => { return i % 2 == 0 ? "#fff" : "#eee" })
         .on('mouseover', function (d, index) {
           /* Option for getting x and y
           let mouse = d3.mouse(d3.event.target);
@@ -425,7 +425,8 @@ class View {
           let row = document.elementsFromPoint(mouse[0],mouse[1])[1];
           d3.select(column).classed('hovered',true);
           d3.select(row).classed('hovered',true);
-           */
+           */ //start removal
+          /*
           that.highlightNode(d,index,"column");
         })
         .on('mouseout', (d, index)=> {
@@ -439,7 +440,7 @@ class View {
         })
 
 
-
+    */
 
 
     // Draw each row (translating the y coordinate)
@@ -451,8 +452,41 @@ class View {
         return "translate(0," + this.verticalScale(i) + ")";
       });
 
+
+      // added highligh row code
+    this.edgeRows//.select('#highlightLayer')
+        .append('rect')
+        .classed('highlightRow', true)
+        .attr('x', 0)
+        .attr('y', 0)
+        .attr('width', this.edgeWidth + this.margins.right)
+        .attr('height', this.verticalScale.bandwidth())
+        .attr('fill', "#fff")
+        .on('mouseover', (d, index)=> {
+          /*this.highlightEdgeNode(d,index,"row");
+
+          this.highlightEdgeNode(d,index,"row");
+          d3.select(this)
+            .classed('hovered', true);
+            */
+        })
+        .on('mouseout', function(d, index) {
+          /*d3.select(this)
+            .classed('hovered', false);*/
+            /*
+          d3.selectAll('.highlightRow')
+            .filter((d: any, i) => { return d.index === index })
+            .classed('hovered', false)*/
+        })
+        .on('click', (d) => {
+          this.clickedNode(d.index);
+          // click node
+          // select node and turn orange ish
+          // highlight other nodes (add jumps?)
+        })
+
     var squares = this.edgeRows.selectAll(".cell")
-      .data(d => { console.log(d); return d.filter(item => item.z > 0) })
+      .data(d => { console.log(d); return d/*.filter(item => item.z > 0)*/ })
       .enter().append("rect")
       .attr("class", "cell")
       .attr("x", d => this.verticalScale(d.x))
@@ -463,13 +497,15 @@ class View {
       .style("fill", d => {
         console.log(d);
         if (d.z == 3) {
-          return "green"; // reply
+          return this.controller.configuration.style.edgeColors["reply"]; // reply
         } else if (d.z == 2) {
-          return "black"; // retweet
+          return this.controller.configuration.style.edgeColors["retweet"];
         } else if (d.z == 1) {
-          return "orange"; // other
-        } else {
+          return this.controller.configuration.style.edgeColors["mention"];
+        } else if (d.z == 0){
           return "white";
+        } else {
+          return "pink"
         }
       })
       .on("mouseover", mouseoverCell)
@@ -477,12 +513,9 @@ class View {
 
     let that = this;
     function mouseoverCell(p) {
-      console.log(this, );
-      this.getAttribute("x")
-      this.getAttribute("y")
-
-      console.log(p);
-      d3.event.preventDefault();
+        let test = d3.selectAll(".cell")
+          .classed("highlightedCell", function (d) {return p.x == d.x || p.y == d.y ? true : false})
+        console.log(test);
 
       // Highlight attribute rows on hovered edge
       let rowIndex, colIndex;
@@ -542,6 +575,24 @@ class View {
         return "translate(" + this.verticalScale(i) + ")rotate(-90)";
       });
 
+      this.edgeColumns
+        .append('rect')
+        .classed('highlightCol', true)
+        .attr('x', 0)
+        .attr('y', 0)
+        .attr('height', this.edgeHeight + this.margins.bottom)
+        .attr('width', this.verticalScale.bandwidth())
+        .on('mouseover',()=>{
+          /*
+          let mouse = d3.mouse(d3.event.target);
+          let column = document.elementsFromPoint(mouse[0],mouse[1])[0];
+          let row = document.elementsFromPoint(mouse[0],mouse[1])[1];
+          d3.select('.hovered').classed('hovered',false);
+          d3.select(column).classed('hovered',true);
+          d3.select(row).classed('hovered',true);
+          */
+        })
+
     this.edgeRows.append("text")
       .attr("class", "label")
       .attr("x", 0)
@@ -579,20 +630,21 @@ class View {
 
   }
 
-  highlightNode(datum,index,position) {
-    let node = this.findNodeHighlight(datum, index, position);
+  highlightEdgeNode(datum,index,span) {
+    let node = this.findEdgeNodeHighlight(datum, index, span);
     node.classed('hovered', true)
     }
 
-  findNodeHighlight(datum, index, position){
+  findEdgeNodeHighlight(datum, index, span){
     let selector = ".highlightRow"
-    if(position == "column"){
+    if(span == "column"){
         selector = ".highlightCol"
     }
     return d3.selectAll(selector).filter((d: any, i) => { return d.index === index })
   }
-  unhighlightNode(datum, index, position){
-    let node = this.findNodeHighlight(datum, index, position);
+
+  unhighlightEdgeNode(datum, index, span){
+    let node = this.findEdgeNodeHighlight(datum, index, span);
     node
         .classed('hovered', false)
   }
@@ -631,18 +683,27 @@ class View {
       .attr("transform", (d, i) => { return "translate(0," + this.verticalScale(i) + ")"; })
 
     // update each highlightRowsIndex
-    /*
-    d3.selectAll('.highlightRow')
-      .transition()
-      .duration(transitionTime)
-      .attr("transform", (d, i) => { return "translate(0," + this.verticalScale(i) + ")"; })
-      .delay((d, i) => { return this.verticalScale(i) * 4; })
-      .attr('fill',(d,i)=>{console.log(this.order[i]);return this.order[i]%2 == 0 ? "#fff" : "#eee"})*/
+
+
+
+      //.attr('fill',(d,i)=>{console.log(this.order[i]);return this.order[i]%2 == 0 ? "#fff" : "#eee"})
 
     var t = this.edges.transition().duration(transitionTime);
     t.selectAll(".column")
       .delay((d, i) => { return this.verticalScale(i) * 4; })
       .attr("transform", (d, i) => { return "translate(" + this.verticalScale(i) + ")rotate(-90)"; });
+
+    d3.selectAll('.highlightRow')
+        .transition()
+        .duration(transitionTime)
+        .delay((d, i) => { return this.verticalScale(i) * 4; })
+        .attr("transform", (d, i) => { return "translate(0," + this.verticalScale(i) + ")"; })
+
+    d3.selectAll('.highlightCol')
+        .transition()
+        .duration(transitionTime)
+        .delay((d, i) => { return this.verticalScale(i) * 4; })
+        .attr("transform", (d, i) => { return "translate(" + this.verticalScale(i) + ")rotate(-90)"; });
   }
   private columnNames: {};
   /**
@@ -666,6 +727,7 @@ class View {
 
 
     // add zebras and highlight rows
+    /*
     this.attributes.selectAll('.highlightRow')
       .data(this.nodes)
       .enter()
@@ -676,20 +738,7 @@ class View {
       .attr('width', this.attributeWidth)
       .attr('height', this.verticalScale.bandwidth())
       .attr('fill', (d, i) => { return i % 2 == 0 ? "#fff" : "#eee" })
-      .on('mouseover', function(d, index) {
-        d3.select(this)
-          .classed('hovered', true);
-
-
-        d3.selectAll('.highlightRow')
-          .filter((d: any, i) => { return d.index === index })
-          .classed('hovered', true)
-      })
-      .on('mouseout', function() {
-
-        d3.selectAll('.highlightRow')
-          .classed('hovered', false)
-      })
+      */
 
     let barMargin = { top: 1, bottom: 1, left: 5, right: 5 }
     let barHeight = this.verticalScale.bandwidth() - barMargin.top - barMargin.bottom;
@@ -708,6 +757,33 @@ class View {
       .attr("x2", this.attributeWidth)
       .attr('stroke', '2px')
       .attr('stroke-opacity', 0.3);
+
+      this.attributeRows.append('rect')
+       .attr('x', 0)
+       .attr('y',0)
+       .classed('highlightRow', true)
+       .attr('width', this.attributeWidth)
+       .attr('height', this.verticalScale.bandwidth()) // end addition
+       .on('mouseover', (d, index)=> {
+         // find the hovered element
+         // find the element under hovered element.
+         this.highlightEdgeNode(d,index,'row');
+         // get corresponding column.
+
+         d3.select(this)
+           .classed('hovered', true);
+
+
+         d3.selectAll('.highlightRow')
+           .filter((d: any, i) => { return d.index === index })
+           .classed('hovered', true)
+       })
+       .on('mouseout', function() {
+
+         d3.selectAll('.highlightRow')
+           .classed('hovered', false)
+       })
+
 
     let columns = [
       "followers_count",// numerical
