@@ -146,21 +146,21 @@ class Model {
   processData() {
     // generate a hashmap of id's?
     // Set up node data
-    this.nodes.forEach((node, i) => {
-      node.count = 0;
+    this.nodes.forEach((rowNode, i) => {
+      rowNode.count = 0;
 
       /* Numeric Conversion */
-      node.followers_count = +node.followers_count;
-      node.query_tweet_count = +node.query_tweet_count;
-      node.friends_count = +node.friends_count;
-      node.statuses_count = +node.statuses_count;
-      node.favourites_count = +node.favourites_count;
-      node.count_followers_in_query = +node.count_followers_in_query;
-      node.id = +node.id;
-      node.y = i;
+      rowNode.followers_count = +rowNode.followers_count;
+      rowNode.query_tweet_count = +rowNode.query_tweet_count;
+      rowNode.friends_count = +rowNode.friends_count;
+      rowNode.statuses_count = +rowNode.statuses_count;
+      rowNode.favourites_count = +rowNode.favourites_count;
+      rowNode.count_followers_in_query = +rowNode.count_followers_in_query;
+      rowNode.id = +rowNode.id;
+      rowNode.y = i;
 
       /* matrix used for edge attributes, otherwise should we hide */
-      this.matrix[i] = d3.range(this.nodes.length).map(function(j) { return { x: j, y: i, z: 0 }; });
+      this.matrix[i] = this.nodes.map(function(colNode) { return { rowid:rowNode.id, colid:colNode.id, x:colNode.index, y: rowNode.index, z: 0 }; });
     });
 
     console.log(this.matrix);
@@ -356,7 +356,10 @@ class View {
     this.verticalScale = d3.scaleBand<number>().range([0, this.edgeWidth]).domain(d3.range(this.nodes.length));
 
     // Draw Highlight Rows
-    this.edges.selectAll('.highlightRow')
+    this.edges//.select('#highlightLayer')
+      .append('g')
+      .attr('id','highlightLayer')
+      .selectAll('.highlightRow')
       .data(this.nodes)
       .enter()
       .append('rect')
@@ -386,6 +389,37 @@ class View {
         // select node and turn orange ish
         // highlight other nodes (add jumps?)
       })
+      // Draw Highlight Columns
+      this.edges.select('#highlightLayer') //highlightLayer alreadyt exists from rows
+        .selectAll('.highlightCol')
+        .data(this.nodes)
+        .enter()
+        .append('rect')
+        .classed('highlightCol', true)
+        .attr('x', (d, i) => this.verticalScale(i))
+        .attr('y', 0 )
+        .attr('width', this.verticalScale.bandwidth())
+        .attr('height', this.edgeHeight + this.margins.bottom)
+        .attr('fill', "#fff")
+        .on('mouseover', function (d, index) {
+          /* Option for getting x and y
+          let mouse = d3.mouse(d3.event.target);
+          let column = document.elementsFromPoint(mouse[0],mouse[1])[0];
+          let row = document.elementsFromPoint(mouse[0],mouse[1])[1];
+          d3.select(column).classed('hovered',true);
+          d3.select(row).classed('hovered',true);
+           */
+          that.highlightNode(d,index,"column");
+        })
+        .on('mouseout', (d, index)=> {
+          this.unhighlightNode(d,index,"column");
+        })
+        .on('click', (d) => {
+          this.clickedNode(d.index);
+          // click node
+          // select node and turn orange ish
+          // highlight other nodes (add jumps?)
+        })
 
 
 
@@ -405,6 +439,7 @@ class View {
       .enter().append("rect")
       .attr("class", "cell")
       .attr("x", d => this.verticalScale(d.x))
+      //.filter(d=>{return d.item >0})
       .attr("width", this.verticalScale.bandwidth())
       .attr("height", this.verticalScale.bandwidth())
       //.style("fill", d => this.opacityScale(d.z))
@@ -416,6 +451,8 @@ class View {
           return "black"; // retweet
         } else if (d.z == 1) {
           return "orange"; // other
+        } else {
+          return "white";
         }
       })
       .on("mouseover", mouseoverCell)
@@ -423,6 +460,10 @@ class View {
 
     let that = this;
     function mouseoverCell(p) {
+      console.log(this, );
+      this.getAttribute("x")
+      this.getAttribute("y")
+
       console.log(p);
       d3.event.preventDefault();
 
@@ -520,6 +561,25 @@ class View {
   mouseoverEdge() {
 
   }
+
+  highlightNode(datum,index,position) {
+    let node = this.findNodeHighlight(datum, index, position);
+    node.classed('hovered', true)
+    }
+
+  findNodeHighlight(datum, index, position){
+    let selector = ".highlightRow"
+    if(position == "column"){
+        selector = ".highlightCol"
+    }
+    return d3.selectAll(selector).filter((d: any, i) => { return d.index === index })
+  }
+  unhighlightNode(datum, index, position){
+    let node = this.findNodeHighlight(datum, index, position);
+    node
+        .classed('hovered', false)
+  }
+
   private attributeRows: any;
   private tooltip: any;
   private barWidthScale: any;
@@ -872,9 +932,17 @@ class Controller {
    */
   private view: any;
   private model: any;
+  private configuration: any;
 
 
   constructor() {
+    this.configuration = d3.json("config.json");
+    this.configuration.then(data=>{
+      console.log(data);
+      this.configuration = data;
+    })
+
+    console.log(this.configuration);
     this.view = new View(this); // initalize view,
     this.model = new Model(this); // start reading in data
   }

@@ -1,0 +1,32 @@
+{
+  "_comment": "value",
+  "directedGraph": "../public/data/network_small_directed_layout3.json",
+  "undirectedGraph": "../public/data/network_small_undirected.json",
+  "isDirected": true,
+  "fixedPositions": null,
+  "state": {
+    "selectedNodes": [],
+    "permamentlySelectedNodes": [],
+    "hoveredNodes": []
+  },
+  "interaction": {
+    "onNodeClick": "highlightNeighbors [highlightNode]",
+    "onEdgeClick": null,
+    "nodeTooltip": false,
+    "edgeTooltip": false,
+    "draggableNodes": null,
+    "multiNodeSelection": true,
+    "multiEdgeSelection": null
+  },
+  "style": {
+    "nodeIsRect": null,
+    "nodeColors": {
+      "individual": "#a88e69",
+      "organization": "#68aa73"
+    },
+    "edgeColors": {
+      "retweet": "#427d9b",
+      "mention": "#88419d"
+    }
+  }
+}
