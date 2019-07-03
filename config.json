@@ -8,8 +8,11 @@
   "state": {
     "selectedNodes": [],
     "permamentlySelectedNodes": [],
-    "hoveredNodes": []
+    "hoveredNodes": [],
+    "sortings":[]
   },
+  "sortKey":"screen_name",
+  "initalKey":"screen_name",
   "interaction": {
     "onNodeClick": "highlightNeighbors [highlightNode]",
     "onEdgeClick": null,

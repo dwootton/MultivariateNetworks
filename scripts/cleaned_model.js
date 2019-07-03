@@ -10,8 +10,17 @@ var Model = /** @class */ (function () {
                 _this.nodes = data.nodes;
                 _this.idMap = {};
                 console.log(_this.nodes);
-                _this.order = _this.changeOrder('screen_name');
-                _this.nodes = _this.nodes.sort(function (a, b) { return a.screen_name.localeCompare(b.screen_name); });
+                console.log(_this.controller.configuration.sortKey);
+                _this.order = _this.changeOrder(_this.controller.configuration.sortKey);
+                console.log(_this.orderType);
+                if (_this.orderType == "screen_name") {
+                    _this.nodes = _this.nodes.sort(function (a, b) { return a.screen_name.localeCompare(b.screen_name); });
+                }
+                else {
+                    console.log(_this.nodes);
+                    _this.nodes = _this.nodes.sort(function (a, b) { console.log(b, a, b[_this.orderType]); return b[_this.orderType] - a[_this.orderType]; });
+                    console.log(_this.nodes);
+                }
                 console.log(_this.nodes);
                 _this.nodes.forEach(function (node, index) {
                     console.log(index);
@@ -94,8 +103,11 @@ var Model = /** @class */ (function () {
     Model.prototype.changeOrder = function (type) {
         var _this = this;
         var order;
+        this.orderType = type;
+        this.controller.configuration.sortKey = type;
         if (type == 'screen_name') {
-            order = d3.range(this.nodes.length).sort(function (a, b) { return _this.nodes[a].screen_name.localeCompare(_this.nodes[a].screen_name); });
+            console.log("in screen name!");
+            order = d3.range(this.nodes.length).sort(function (a, b) { return _this.nodes[a].screen_name.localeCompare(_this.nodes[b].screen_name); });
         }
         else {
             order = d3.range(this.nodes.length).sort(function (a, b) { return _this.nodes[b][type] - _this.nodes[a][type]; });
@@ -146,7 +158,6 @@ var Model = /** @class */ (function () {
                 _this.matrix[_this.idMap[link.target]][_this.idMap[link.source]].z += addValue;
                 _this.matrix[_this.idMap[link.target]].count += 1;
             }
-            //
         });
     };
     Model.prototype.getOrder = function () {
@@ -228,6 +239,7 @@ var View = /** @class */ (function () {
         this.initalizeAttributes();
         var that = this;
         d3.select("#order").on("change", function () {
+            console.log(this.value);
             that.sort(this.value);
         });
     };
@@ -478,6 +490,7 @@ var View = /** @class */ (function () {
      */
     View.prototype.sort = function (order) {
         var _this = this;
+        console.log(order, "NewOrder!");
         this.order = this.controller.changeOrder(order);
         console.log(this.order);
         this.verticalScale.domain(this.order);

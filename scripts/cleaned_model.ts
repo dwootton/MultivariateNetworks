@@ -11,6 +11,7 @@ class Model {
   private order: any;
   private controller: any;
   private idMap;
+  private orderType;
 
 
   grabTwitterData(graph, tweets) {
@@ -101,9 +102,17 @@ class Model {
         this.idMap = {};
 
         console.log(this.nodes)
-        this.order = this.changeOrder('screen_name');
+        console.log(this.controller.configuration.sortKey);
+        this.order = this.changeOrder(this.controller.configuration.sortKey);
+        console.log(this.orderType);
+        if(this.orderType == "screen_name"){
+          this.nodes = this.nodes.sort((a, b) => a.screen_name.localeCompare(b.screen_name));
+        } else {
+          console.log(this.nodes)
+          this.nodes = this.nodes.sort((a, b) => { console.log(b,a,b[this.orderType]);return b[this.orderType] - a[this.orderType]; });
+          console.log(this.nodes);
+        }
 
-        this.nodes = this.nodes.sort((a, b) => a.screen_name.localeCompare(b.screen_name));
         console.log(this.nodes)
         this.nodes.forEach((node, index) => {
           console.log(index)
@@ -133,8 +142,11 @@ class Model {
    */
   changeOrder(type: string) {
     let order;
+    this.orderType = type;
+    this.controller.configuration.sortKey = type;
     if (type == 'screen_name') {
-      order = d3.range(this.nodes.length).sort((a, b) => { return this.nodes[a].screen_name.localeCompare(this.nodes[a].screen_name) })
+      console.log("in screen name!")
+      order = d3.range(this.nodes.length).sort((a, b) => { return this.nodes[a].screen_name.localeCompare(this.nodes[b].screen_name) })
     }
     else {
       order = d3.range(this.nodes.length).sort((a, b) => { return this.nodes[b][type] - this.nodes[a][type]; })
@@ -188,9 +200,6 @@ class Model {
         this.matrix[this.idMap[link.target]][this.idMap[link.source]].z += addValue;
         this.matrix[this.idMap[link.target]].count += 1;
       }
-
-
-      //
     });
   }
 
@@ -312,6 +321,7 @@ class View {
     this.initalizeAttributes();
     let that = this;
     d3.select("#order").on("change", function() {
+      console.log(this.value);
       that.sort(this.value);
     });
   }
@@ -598,6 +608,7 @@ class View {
    * @return [description]
    */
   sort(order) {
+    console.log(order,"NewOrder!")
     this.order = this.controller.changeOrder(order);
     console.log(this.order);
     this.verticalScale.domain(this.order);
