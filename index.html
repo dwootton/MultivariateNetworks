@@ -27,7 +27,8 @@
     display: none;  // Safari and Chrome
 }
 .highlightedCell{
-  fill: #FFF4D3 !important;
+  fill: #FFF4D3;
+  fill-opacity:1 !important;
 }
 .column {
 
@@ -53,9 +54,12 @@ div.tooltip {
   transition: 0.3s;
 }
 
-
+line {
+  pointer-events: none;
+}
 .hovered {
-  fill: #FFF4D3;
+  fill: #FFF4D3 !important;
+  fill-opacity:1 !important;
 }
 
 text.active {
