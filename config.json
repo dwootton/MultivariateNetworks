@@ -2,7 +2,7 @@
   "_comment": "value",
   "directedGraph": "../public/data/network_small_directed_layout3.json",
   "undirectedGraph": "../public/data/network_small_undirected.json",
-  "isDirected": true,
+  "isDirected": false,
   "fixedPositions": null,
   "edgeTypes": ["retweet","mention","reply"],
   "state": {

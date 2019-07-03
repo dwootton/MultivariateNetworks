@@ -177,17 +177,20 @@ class Model {
         addValue = 3;
       } else if (link.type == "retweet") {
         addValue = 2;
-      } else {
+      } else if (link.type == "mentions") {
         addValue = 1;
       }
 
       /* could be used for varying edge types */
       this.matrix[this.idMap[link.source]][this.idMap[link.target]].z += addValue;
-      //this.matrix[this.idMap[link.target]][this.idMap[link.source]].z += 1;
-      //matrix[link.source][link.source].z += link.value;
-      //matrix[link.target][link.target].z += link.value;
       this.matrix[this.idMap[link.source]].count += 1;
-      //this.matrix[this.idMap[link.target]].count += 1;
+      if(!this.controller.configuration.isDirected){
+        this.matrix[this.idMap[link.target]][this.idMap[link.source]].z += addValue;
+        this.matrix[this.idMap[link.target]].count += 1;
+      }
+
+
+      //
     });
   }
 

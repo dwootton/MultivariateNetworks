@@ -136,16 +136,17 @@ var Model = /** @class */ (function () {
             else if (link.type == "retweet") {
                 addValue = 2;
             }
-            else {
+            else if (link.type == "mentions") {
                 addValue = 1;
             }
             /* could be used for varying edge types */
             _this.matrix[_this.idMap[link.source]][_this.idMap[link.target]].z += addValue;
-            //this.matrix[this.idMap[link.target]][this.idMap[link.source]].z += 1;
-            //matrix[link.source][link.source].z += link.value;
-            //matrix[link.target][link.target].z += link.value;
             _this.matrix[_this.idMap[link.source]].count += 1;
-            //this.matrix[this.idMap[link.target]].count += 1;
+            if (!_this.controller.configuration.isDirected) {
+                _this.matrix[_this.idMap[link.target]][_this.idMap[link.source]].z += addValue;
+                _this.matrix[_this.idMap[link.target]].count += 1;
+            }
+            //
         });
     };
     Model.prototype.getOrder = function () {
