@@ -165,7 +165,7 @@ class Model {
       rowNode.y = i;
 
       /* matrix used for edge attributes, otherwise should we hide */
-      this.matrix[i] = this.nodes.map(function(colNode) { return { rowid: rowNode.id, colid: colNode.id, x: colNode.index, y: rowNode.index, z: 0 }; });
+      this.matrix[i] = this.nodes.map(function(colNode) { return { rowid: rowNode.screen_name, colid: colNode.screen_name, x: colNode.index, y: rowNode.index, z: 0 }; });
     });
 
 
@@ -316,14 +316,15 @@ class View {
    * @param  name         [description]
    * @param  verticleNode [description]
    * @return              [description]
-   */
+
   highlightNodes(name: string, verticleNode: boolean) {
     let selector: string = verticleNode ? ".highlightRow" : ".highlightRow";
 
     d3.selectAll(selector)
       .filter((d: any) => { return d.name == name })
       .classed('hovered', true);
-  }
+  }*/
+
   /**
    * [clickedNode description]
    * @return [description]
@@ -441,6 +442,9 @@ this.edgeColumns.append("line")
 this.edgeColumns
   .append('rect')
   .classed('highlightCol', true)
+  .attr('id',(d,i)=>{
+    return "highlightCol"+d[i].colid;
+  })
   .attr('x', -this.edgeHeight - this.margins.bottom)
   .attr('y', 0)
   .attr('width', this.edgeHeight + this.margins.bottom) // these are swapped as the columns have a rotation
@@ -473,13 +477,17 @@ this.edgeColumns
     // added highligh row code
     this.edgeRows//.select('#highlightLayer')
       .append('rect')
-      .classed('highlightRow', true)
+      .classed('highlightTopoRow', true)
+      .attr('id',(d,i)=>{
+        return "highlightTopoRow"+d[i].rowid;
+      })
       .attr('x', 0)
       .attr('y', 0)
       .attr('width', this.edgeWidth + this.margins.right)
       .attr('height', this.verticalScale.bandwidth())
       .attr('fill-opacity',0)
       .on('mouseover', (d, index) => {
+
         /*this.highlightEdgeNode(d,index,"row");
 
         this.highlightEdgeNode(d,index,"row");
@@ -487,7 +495,7 @@ this.edgeColumns
           .classed('hovered', true);
           */
       })
-      .on('mouseout', function(d, index) {
+      .on('mouseout', () =>{
         /*d3.select(this)
           .classed('hovered', false);*/
         /*
@@ -532,8 +540,22 @@ this.edgeColumns
 
     let that = this;
     function mouseoverCell(p) {
-      console.log(d3.selectAll(".highlightRow"));
-      let test1 = d3.selectAll(".highlightRow")
+
+      /*let attrPrimaryRow = that.selectHighlight(p,"Row","Attr"),
+          topologyPrimaryRow = that.selectHighlight(p,"Row","Topo",'y'),
+          attrSecondaryRow = that.selectHighlight(p,"Row","Attr"),
+          topologySecondaryCol = that.selectHighlight(p,"Col","Topo",'x');
+
+      attrPrimaryRow.classed('hovered',true);
+      topologyPrimaryRow.classed('hovered',true);
+      attrSecondaryRow.classed('hovered',true);
+      topologySecondaryCol.classed('hovered',true);*/
+      console.log(p);
+      that.highlightRow(p);
+      that.highlightRowAndCol(p);
+
+      /*
+      let test1 = d3.selectAll(".highlightRow") // secondary
         .filter((d, i) => {
           if (d.index != null) {
             return p.y == d.index;
@@ -551,7 +573,7 @@ this.edgeColumns
         })
         .classed('hovered', true);
 
-      let test = d3.selectAll(".highlightCol")
+      let test = d3.selectAll(".highlightCol") // secondary
         .filter((d, i) => {
           if (d.index != null) {
             return p.x == d.index;
@@ -560,6 +582,7 @@ this.edgeColumns
         })
         .classed("hovered", true);
       console.log(test,test1);
+      */
       // Highlight attribute rows on hovered edge
       let rowIndex, colIndex;
       d3.selectAll(".row text").classed("active", (d, i) => {
@@ -602,8 +625,11 @@ this.edgeColumns
 
       that.tooltip.transition().duration(250).style("opacity", 0);
 
-      d3.selectAll('.highlightRow')
+      // encapsulate in one function
+      d3.selectAll('.highlightAttrRow')
         .classed('hovered', false);
+        d3.selectAll('.highlightTopoRow')
+          .classed('hovered', false);
       d3.selectAll('.highlightCol')
         .classed('hovered',false);
     }
@@ -628,8 +654,6 @@ this.edgeColumns
       .attr("text-anchor", "start")
       .style("font-size", 7.5 + "px")
       .text((d, i) => this.nodes[i].screen_name);
-
-
 
     this.tooltip = d3.select("body")
       .append("div")
@@ -663,6 +687,35 @@ this.edgeColumns
     node
       .classed('hovered', false)
   }
+
+  highlightRow(node){
+    let nodeID = node.screen_name;
+    if(node.screen_name == null){
+      nodeID = node.rowid;
+    }
+    // highlight attr
+    this.highlightNode(nodeID,'Attr');
+    this.highlightNode(nodeID,'Topo');
+  }
+
+  highlightRowAndCol(node){
+    let nodeID = node.screen_name;
+    if(node.screen_name == null){
+      nodeID = node.colid;
+    }
+
+    this.highlightNode(nodeID,'Attr');
+    this.highlightNode(nodeID,'','Col');
+  }
+
+  highlightNode(nodeID:string,attrOrTopo:string,rowOrCol:string = 'Row'){
+    console.log(d3.selectAll('#highlight'+attrOrTopo+rowOrCol+nodeID),'.highlight'+attrOrTopo+rowOrCol+nodeID);
+    d3.selectAll('#highlight'+attrOrTopo+rowOrCol+nodeID)
+      .classed('hovered',true);
+  }
+
+
+
 
   private attributeRows: any;
   private tooltip: any;
@@ -704,7 +757,7 @@ this.edgeColumns
       .delay((d, i) => { return this.verticalScale(i) * 4; })
       .attr("transform", (d, i) => { return "translate(" + this.verticalScale(i) + ")rotate(-90)"; });
 
-    d3.selectAll('.highlightRow')
+    /*d3.selectAll('.highlightRow') // taken care of as they're apart of row and column groupings already
       .transition()
       .duration(transitionTime)
       .delay((d, i) => { return this.verticalScale(i) * 4; })
@@ -714,7 +767,7 @@ this.edgeColumns
       .transition()
       .duration(transitionTime)
       .delay((d, i) => { return this.verticalScale(i) * 4; })
-      .attr("transform", (d, i) => { return "translate(" + this.verticalScale(i) + ")rotate(-90)"; });
+      .attr("transform", (d, i) => { return "translate(" + this.verticalScale(i) + ")rotate(-90)"; });*/
   }
   private columnNames: {};
   /**
@@ -772,31 +825,43 @@ this.edgeColumns
     this.attributeRows.append('rect')
       .attr('x', 0)
       .attr('y', 0)
-      .classed('highlightRow', true)
+      .classed('highlightAttrRow', true)
+      .attr('id',(d,i)=>{
+        return "highlightAttrRow"+d.screen_name;
+      })
       .attr('width', this.attributeWidth)
       .attr('height', this.verticalScale.bandwidth()) // end addition
       .attr("fill-opacity",0)
-      .on('mouseover', (p, index) => {
+      .on('mouseover', (p : any) => {
+        // selection constructor
+          // selection of rows or columns
+          // selection of edge or attribute
+        // classing hovered as true
+
+        console.log(p);
         // wont work for seriated matricies!
-        let sel = d3.selectAll(".highlightRow")
+        let attrRow = this.highlightRow(p);
+
+        /*let sel = d3.selectAll(".highlightRow")
           .filter((d, i) => {
+
               if(d.index != null){
-                return p.index == d.index;
+                return p.index == d.index; // attr
               }
               console.log(p.index,d[i]);
-              return p.index == d[i].y;
+              return //p.index == d[i].y; //topology
 
           })
-          .classed("hovered", true);
+          .classed("hovered", true);*/
         /*d3.selectAll(".highlightRow")
           .filter((d,index)=>{return d.index==index})*/
-          console.log(sel);
-
       })
       .on('mouseout', function() {
 
-        d3.selectAll('.highlightRow')
+        d3.selectAll('.highlightAttrRow')
           .classed('hovered', false)
+          d3.selectAll('.highlightTopoRow')
+            .classed('hovered', false)
       })
 
 
@@ -988,6 +1053,30 @@ this.edgeColumns
 
 
 
+  }
+
+/**
+ * [selectHighlight description]
+ * @param  nodeToSelect    the
+ * @param  rowOrCol        String, "Row" or "Col"
+ * @param  selectAttribute Boolean of to select attribute or topology highlight
+ * @return                 [description]
+ */
+  selectHighlight(nodeToSelect : any, rowOrCol : string, attrOrTopo: string = "Attr", orientation : string = 'x'){
+    console.log(nodeToSelect, attrOrTopo,orientation)
+    let selection = d3.selectAll(".highlight"  + attrOrTopo + rowOrCol)
+      .filter((d, i) => {
+          if(attrOrTopo == "Attr" && d.index == null){
+            console.log(d);
+             // attr
+             return nodeToSelect.index == d[i][orientation];
+          }
+          console.log(d);
+           //topology
+          return nodeToSelect.index == d.index;
+      })
+      console.log(selection);
+    return selection;
   }
 
   clicked(key) {
