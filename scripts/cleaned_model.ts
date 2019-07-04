@@ -637,7 +637,7 @@ this.edgeColumns
     this.order = this.controller.getOrder();
 
 
-
+    //
     this.edgeRows.append("text")
       .attr("class", "label")
       .attr("x", 0)
@@ -645,7 +645,9 @@ this.edgeColumns
       .attr("dy", ".32em")
       .attr("text-anchor", "end")
       .style("font-size", 7.5 + "px")
-      .text((d, i) => this.nodes[i].screen_name);
+      .text((d, i) => this.nodes[i].screen_name)
+      .on('click',d=>{console.log(d);this.selectNode(d[0].rowid);});
+
 
     this.edgeColumns.append("text")
       .attr("class", "label")
@@ -653,7 +655,9 @@ this.edgeColumns
       .attr("dy", ".32em")
       .attr("text-anchor", "start")
       .style("font-size", 7.5 + "px")
-      .text((d, i) => this.nodes[i].screen_name);
+      .text((d, i) => this.nodes[i].screen_name)
+      //.on('click',d=>{console.log(d);this.selectNode(d[0].colid);});
+
 
     this.tooltip = d3.select("body")
       .append("div")
@@ -667,25 +671,6 @@ this.edgeColumns
    */
   mouseoverEdge() {
 
-  }
-
-  highlightEdgeNode(datum, index, span) {
-    let node = this.findEdgeNodeHighlight(datum, index, span);
-    node.classed('hovered', true)
-  }
-
-  findEdgeNodeHighlight(datum, index, span) {
-    let selector = ".highlightRow"
-    if (span == "column") {
-      selector = ".highlightCol"
-    }
-    return d3.selectAll(selector).filter((d: any, i) => { return d.index === index })
-  }
-
-  unhighlightEdgeNode(datum, index, span) {
-    let node = this.findEdgeNodeHighlight(datum, index, span);
-    node
-      .classed('hovered', false)
   }
 
   highlightRow(node){
@@ -712,6 +697,19 @@ this.edgeColumns
     console.log(d3.selectAll('#highlight'+attrOrTopo+rowOrCol+nodeID),'.highlight'+attrOrTopo+rowOrCol+nodeID);
     d3.selectAll('#highlight'+attrOrTopo+rowOrCol+nodeID)
       .classed('hovered',true);
+  }
+
+  selectNode(nodeID){
+    let attrRow = d3.selectAll('#highlight'+'Attr'+'Row'+nodeID);
+    attrRow
+      .classed('selected',!attrRow.classed('selected'));
+    console.log(attrRow,attrRow.classed('selected'));
+    let topoRow = d3.selectAll('#highlight'+'Topo'+'Row'+nodeID);
+    topoRow
+        .classed('selected',!topoRow.classed('selected'));
+
+
+
   }
 
 

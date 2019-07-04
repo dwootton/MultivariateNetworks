@@ -530,6 +530,7 @@ var View = /** @class */ (function () {
                 .classed('hovered', false);
         }
         this.order = this.controller.getOrder();
+        //
         this.edgeRows.append("text")
             .attr("class", "label")
             .attr("x", 0)
@@ -537,7 +538,8 @@ var View = /** @class */ (function () {
             .attr("dy", ".32em")
             .attr("text-anchor", "end")
             .style("font-size", 7.5 + "px")
-            .text(function (d, i) { return _this.nodes[i].screen_name; });
+            .text(function (d, i) { return _this.nodes[i].screen_name; })
+            .on('click', function (d) { console.log(d); _this.selectNode(d[0].rowid); });
         this.edgeColumns.append("text")
             .attr("class", "label")
             .attr("y", 0)
@@ -545,6 +547,7 @@ var View = /** @class */ (function () {
             .attr("text-anchor", "start")
             .style("font-size", 7.5 + "px")
             .text(function (d, i) { return _this.nodes[i].screen_name; });
+        //.on('click',d=>{console.log(d);this.selectNode(d[0].colid);});
         this.tooltip = d3.select("body")
             .append("div")
             .attr("class", "tooltip")
@@ -555,22 +558,6 @@ var View = /** @class */ (function () {
      * @return [description]
      */
     View.prototype.mouseoverEdge = function () {
-    };
-    View.prototype.highlightEdgeNode = function (datum, index, span) {
-        var node = this.findEdgeNodeHighlight(datum, index, span);
-        node.classed('hovered', true);
-    };
-    View.prototype.findEdgeNodeHighlight = function (datum, index, span) {
-        var selector = ".highlightRow";
-        if (span == "column") {
-            selector = ".highlightCol";
-        }
-        return d3.selectAll(selector).filter(function (d, i) { return d.index === index; });
-    };
-    View.prototype.unhighlightEdgeNode = function (datum, index, span) {
-        var node = this.findEdgeNodeHighlight(datum, index, span);
-        node
-            .classed('hovered', false);
     };
     View.prototype.highlightRow = function (node) {
         var nodeID = node.screen_name;
@@ -594,6 +581,15 @@ var View = /** @class */ (function () {
         console.log(d3.selectAll('#highlight' + attrOrTopo + rowOrCol + nodeID), '.highlight' + attrOrTopo + rowOrCol + nodeID);
         d3.selectAll('#highlight' + attrOrTopo + rowOrCol + nodeID)
             .classed('hovered', true);
+    };
+    View.prototype.selectNode = function (nodeID) {
+        var attrRow = d3.selectAll('#highlight' + 'Attr' + 'Row' + nodeID);
+        attrRow
+            .classed('selected', !attrRow.classed('selected'));
+        console.log(attrRow, attrRow.classed('selected'));
+        var topoRow = d3.selectAll('#highlight' + 'Topo' + 'Row' + nodeID);
+        topoRow
+            .classed('selected', !topoRow.classed('selected'));
     };
     /**
      * [sort description]
