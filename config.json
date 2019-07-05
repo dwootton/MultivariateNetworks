@@ -7,6 +7,8 @@
   "edgeTypes": ["retweet","mention","reply"],
   "state": {
     "selectedNodes": [],
+    "columnSelectedNodes": [],
+    "highlightedNodes": {},
     "permamentlySelectedNodes": [],
     "hoveredNodes": [],
     "sortings":[]

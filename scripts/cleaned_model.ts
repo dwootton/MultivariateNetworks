@@ -427,39 +427,39 @@ class View {
 
 */
 
-this.edgeColumns = this.edges.selectAll(".column")
-  .data(this.matrix)
-  .enter().append("g")
-  .attr("class", "column")
-  .attr("transform", (d, i) => {
-    return "translate(" + this.verticalScale(i) + ")rotate(-90)";
-  });
+    this.edgeColumns = this.edges.selectAll(".column")
+      .data(this.matrix)
+      .enter().append("g")
+      .attr("class", "column")
+      .attr("transform", (d, i) => {
+        return "translate(" + this.verticalScale(i) + ")rotate(-90)";
+      });
 
 
-this.edgeColumns.append("line")
-  .attr("x1", -this.edgeWidth);
+    this.edgeColumns.append("line")
+      .attr("x1", -this.edgeWidth);
 
-this.edgeColumns
-  .append('rect')
-  .classed('highlightCol', true)
-  .attr('id',(d,i)=>{
-    return "highlightCol"+d[i].colid;
-  })
-  .attr('x', -this.edgeHeight - this.margins.bottom)
-  .attr('y', 0)
-  .attr('width', this.edgeHeight + this.margins.bottom) // these are swapped as the columns have a rotation
-  .attr('height', this.verticalScale.bandwidth())
-  .attr('fill-opacity',0)
-  .on('mouseover', () => {
-    /*
-    let mouse = d3.mouse(d3.event.target);
-    let column = document.elementsFromPoint(mouse[0],mouse[1])[0];
-    let row = document.elementsFromPoint(mouse[0],mouse[1])[1];
-    d3.select('.hovered').classed('hovered',false);
-    d3.select(column).classed('hovered',true);
-    d3.select(row).classed('hovered',true);
-    */
-  })
+    this.edgeColumns
+      .append('rect')
+      .classed('highlightCol', true)
+      .attr('id', (d, i) => {
+        return "highlightCol" + d[i].colid;
+      })
+      .attr('x', -this.edgeHeight - this.margins.bottom)
+      .attr('y', 0)
+      .attr('width', this.edgeHeight + this.margins.bottom) // these are swapped as the columns have a rotation
+      .attr('height', this.verticalScale.bandwidth())
+      .attr('fill-opacity', 0)
+      .on('mouseover', () => {
+        /*
+        let mouse = d3.mouse(d3.event.target);
+        let column = document.elementsFromPoint(mouse[0],mouse[1])[0];
+        let row = document.elementsFromPoint(mouse[0],mouse[1])[1];
+        d3.select('.hovered').classed('hovered',false);
+        d3.select(column).classed('hovered',true);
+        d3.select(row).classed('hovered',true);
+        */
+      })
 
 
     // Draw each row (translating the y coordinate)
@@ -478,14 +478,14 @@ this.edgeColumns
     this.edgeRows//.select('#highlightLayer')
       .append('rect')
       .classed('highlightTopoRow', true)
-      .attr('id',(d,i)=>{
-        return "highlightTopoRow"+d[i].rowid;
+      .attr('id', (d, i) => {
+        return "highlightTopoRow" + d[i].rowid;
       })
       .attr('x', 0)
       .attr('y', 0)
       .attr('width', this.edgeWidth + this.margins.right)
       .attr('height', this.verticalScale.bandwidth())
-      .attr('fill-opacity',0)
+      .attr('fill-opacity', 0)
       .on('mouseover', (d, index) => {
 
         /*this.highlightEdgeNode(d,index,"row");
@@ -495,7 +495,7 @@ this.edgeColumns
           .classed('hovered', true);
           */
       })
-      .on('mouseout', () =>{
+      .on('mouseout', () => {
         /*d3.select(this)
           .classed('hovered', false);*/
         /*
@@ -628,10 +628,10 @@ this.edgeColumns
       // encapsulate in one function
       d3.selectAll('.highlightAttrRow')
         .classed('hovered', false);
-        d3.selectAll('.highlightTopoRow')
-          .classed('hovered', false);
+      d3.selectAll('.highlightTopoRow')
+        .classed('hovered', false);
       d3.selectAll('.highlightCol')
-        .classed('hovered',false);
+        .classed('hovered', false);
     }
 
     this.order = this.controller.getOrder();
@@ -646,7 +646,11 @@ this.edgeColumns
       .attr("text-anchor", "end")
       .style("font-size", 7.5 + "px")
       .text((d, i) => this.nodes[i].screen_name)
-      .on('click',d=>{console.log(d);this.selectNode(d[0].rowid);});
+      .on('click', (d,i,nodes) => {
+        d3.select(nodes[i]).classed('selected',!this.controller.configuration.state.columnSelectedNodes.includes(d[0].rowid));
+
+        this.selectNode(d[0].rowid);
+       });
 
 
     this.edgeColumns.append("text")
@@ -656,7 +660,14 @@ this.edgeColumns
       .attr("text-anchor", "start")
       .style("font-size", 7.5 + "px")
       .text((d, i) => this.nodes[i].screen_name)
-      //.on('click',d=>{console.log(d);this.selectNode(d[0].colid);});
+      .on('click', (d,index,nodes) => {
+
+        d3.select(nodes[index]).classed('selected',!this.controller.configuration.state.columnSelectedNodes.includes(d[index].rowid));
+
+        console.log(d[index].rowid);
+        this.selectColumnNode(d[index].rowid);
+
+      });
 
 
     this.tooltip = d3.select("body")
@@ -673,43 +684,178 @@ this.edgeColumns
 
   }
 
-  highlightRow(node){
+  highlightRow(node) {
     let nodeID = node.screen_name;
-    if(node.screen_name == null){
+    if (node.screen_name == null) {
       nodeID = node.rowid;
     }
     // highlight attr
-    this.highlightNode(nodeID,'Attr');
-    this.highlightNode(nodeID,'Topo');
+    this.highlightNode(nodeID, 'Attr');
+    this.highlightNode(nodeID, 'Topo');
   }
 
-  highlightRowAndCol(node){
+  highlightRowAndCol(node) {
     let nodeID = node.screen_name;
-    if(node.screen_name == null){
+    if (node.screen_name == null) {
       nodeID = node.colid;
     }
 
-    this.highlightNode(nodeID,'Attr');
-    this.highlightNode(nodeID,'','Col');
+    this.highlightNode(nodeID, 'Attr');
+    this.highlightNode(nodeID, '', 'Col');
   }
 
-  highlightNode(nodeID:string,attrOrTopo:string,rowOrCol:string = 'Row'){
-    console.log(d3.selectAll('#highlight'+attrOrTopo+rowOrCol+nodeID),'.highlight'+attrOrTopo+rowOrCol+nodeID);
-    d3.selectAll('#highlight'+attrOrTopo+rowOrCol+nodeID)
-      .classed('hovered',true);
+  highlightNode(nodeID: string, attrOrTopo: string, rowOrCol: string = 'Row') {
+    console.log(d3.selectAll('#highlight' + attrOrTopo + rowOrCol + nodeID), '.highlight' + attrOrTopo + rowOrCol + nodeID);
+    d3.selectAll('#highlight' + attrOrTopo + rowOrCol + nodeID)
+      .classed('hovered', true);
   }
 
-  selectNode(nodeID){
+
+
+  //u: BCC    BCCINVITADOS2019
+  //p:
+
+  //private selectedNodes : any;
+  // DOESNT GET ADDED
+  addHighlightNode(addingNode: string) {
+    // if node is in
+    let nodeIndex = this.nodes.findIndex(function(item, i) {
+      return item.screen_name == addingNode;
+    });
+    console.log(this.matrix[nodeIndex]);
+    for (let i = 0; i < this.matrix[0].length; i++) {
+      console.log(this.matrix[i][nodeIndex].z, this.matrix[i][nodeIndex]);
+      if (this.matrix[i][nodeIndex].z > 0) {
+        let nodeID = this.matrix[i][nodeIndex].rowid;
+        console.log(nodeID);
+        if (this.controller.configuration.state.highlightedNodes.hasOwnProperty(nodeID) && !this.controller.configuration.state.highlightedNodes[nodeID].includes(addingNode)) {
+          // if array exists, add it
+          console.log(this.controller.configuration.state.highlightedNodes[nodeID]);
+          this.controller.configuration.state.highlightedNodes[nodeID].push(addingNode);
+        } else {
+          // if array non exist, create it and add node
+          console.log(this.controller.configuration.state.highlightedNodes);
+          this.controller.configuration.state.highlightedNodes[nodeID] = [addingNode];
+          console.log(this.controller.configuration.state.highlightedNodes);
+        }
+      }
+    }
+  }
+
+
+
+
+
+
+
+  /**
+   * [removeHighlightNode description]
+   * @param  nodeID       [description]
+   * @param  removingNode [description]
+   * @return              [description]
+   */
+  removeHighlightNode(removingNode: string) {
+    // remove from selected nodes
+    console.log(this.controller.configuration.state.columnSelectedNodes);
+
+    console.log(this.controller.configuration.state.highlightedNodes);
+    for (let nodeID in this.controller.configuration.state.highlightedNodes) {
+      console.log('to_remove_Hightlight', nodeID);
+      //finds the position of removing node in the nodes array
+      let index = this.controller.configuration.state.highlightedNodes[nodeID].indexOf(removingNode);
+      // keep on removing all places of removing node
+      if (index > -1) {
+        this.controller.configuration.state.highlightedNodes[nodeID].splice(index, 1);
+        // delete properties if no nodes left
+        if (this.controller.configuration.state.highlightedNodes[nodeID].length == 0) {
+          delete this.controller.configuration.state.highlightedNodes[nodeID];
+        }
+        console.log(this.controller.configuration.state.highlightedNodes[nodeID])
+      }
+    }
+  }
+
+
+  renderHighlightNodes() {
+    //for
+    // remove all highlights
+    d3.selectAll('.neighborSelected').classed('neighborSelected', false);
+    // re add all highlights
+    for (let nodeID in this.controller.configuration.state.highlightedNodes) {
+      console.log("node to be highlighted", nodeID);
+      d3.select('#highlight' + 'Topo' + 'Row' + nodeID)
+        .classed('neighborSelected', true);
+      d3.select('#highlight' + 'Attr' + 'Row' + nodeID)
+        .classed('neighborSelected', true);
+    }
+  }
+
+  selectNode(nodeID: string) {
+    let attrRow = d3.selectAll('#highlight' + 'Attr' + 'Row' + nodeID);
+    attrRow
+      .classed('selected', !attrRow.classed('selected'));
+
+    let topoRow = d3.selectAll('#highlight' + 'Topo' + 'Row' + nodeID);
+    topoRow
+      .classed('selected', !topoRow.classed('selected'));
+  }
+
+  selectColumnNode(nodeID) {
+    let nodeIndex = this.controller.configuration.state.columnSelectedNodes.indexOf(nodeID);
+    console.log(nodeIndex);
+    if (nodeIndex > -1) {
+      // find all neighbors and remove them
+      console.log("remove node", this.controller.configuration.state.columnSelectedNodes, this.controller.configuration.state.columnSelectedNodes.splice(nodeIndex, 1));
+      this.removeHighlightNode(nodeID);
+      this.controller.configuration.state.columnSelectedNodes.splice(nodeIndex, 1);
+      console.log("remove node", this.controller.configuration.state.columnSelectedNodes);
+      // remove node from column selected nodes
+    } else {
+      console.log("add node", nodeID);
+      this.addHighlightNode(nodeID);
+      this.controller.configuration.state.columnSelectedNodes.push(nodeID);
+    }
+    console.log(this.controller.configuration.state.columnSelectedNodes);
+    this.renderHighlightNodes();
+    /*let index = this.controller.configuration.state.selectedNodes.indexOf(nodeID);
+
+    if(index > -1){ // if in selected node, remove it (unless it is )
+      this.controller.configuration.state.selectedNodes.splice(index,1);
+      //find all partner nodes
+      // if still exists keep,
+    } else {
+      // add node
+      this.controller.configuration.state.selectedNodes.push(nodeID);
+
+    }
+
     let attrRow = d3.selectAll('#highlight'+'Attr'+'Row'+nodeID);
     attrRow
-      .classed('selected',!attrRow.classed('selected'));
+      .classed('selected',(d)=>{
+        // need to remove if clicked, but not if clicked from another node
+        // store hashmap with counts
+        // iterate through each time a click and change values
+        // if lengths > 0
+
+        // Add all elements to set
+        // at each click, readd and remove all
+
+        // if already selected, remove  and uncolor nodes
+        // if not, add and color nodes
+
+
+
+        return !
+      });//!attrRow.classed('selected')
+
     console.log(attrRow,attrRow.classed('selected'));
+
     let topoRow = d3.selectAll('#highlight'+'Topo'+'Row'+nodeID);
     topoRow
         .classed('selected',!topoRow.classed('selected'));
 
 
-
+        */
   }
 
 
@@ -824,16 +970,16 @@ this.edgeColumns
       .attr('x', 0)
       .attr('y', 0)
       .classed('highlightAttrRow', true)
-      .attr('id',(d,i)=>{
-        return "highlightAttrRow"+d.screen_name;
+      .attr('id', (d, i) => {
+        return "highlightAttrRow" + d.screen_name;
       })
       .attr('width', this.attributeWidth)
       .attr('height', this.verticalScale.bandwidth()) // end addition
-      .attr("fill-opacity",0)
-      .on('mouseover', (p : any) => {
+      .attr("fill-opacity", 0)
+      .on('mouseover', (p: any) => {
         // selection constructor
-          // selection of rows or columns
-          // selection of edge or attribute
+        // selection of rows or columns
+        // selection of edge or attribute
         // classing hovered as true
 
         console.log(p);
@@ -858,8 +1004,8 @@ this.edgeColumns
 
         d3.selectAll('.highlightAttrRow')
           .classed('hovered', false)
-          d3.selectAll('.highlightTopoRow')
-            .classed('hovered', false)
+        d3.selectAll('.highlightTopoRow')
+          .classed('hovered', false)
       })
 
 
@@ -1053,27 +1199,27 @@ this.edgeColumns
 
   }
 
-/**
- * [selectHighlight description]
- * @param  nodeToSelect    the
- * @param  rowOrCol        String, "Row" or "Col"
- * @param  selectAttribute Boolean of to select attribute or topology highlight
- * @return                 [description]
- */
-  selectHighlight(nodeToSelect : any, rowOrCol : string, attrOrTopo: string = "Attr", orientation : string = 'x'){
-    console.log(nodeToSelect, attrOrTopo,orientation)
-    let selection = d3.selectAll(".highlight"  + attrOrTopo + rowOrCol)
+  /**
+   * [selectHighlight description]
+   * @param  nodeToSelect    the
+   * @param  rowOrCol        String, "Row" or "Col"
+   * @param  selectAttribute Boolean of to select attribute or topology highlight
+   * @return                 [description]
+   */
+  selectHighlight(nodeToSelect: any, rowOrCol: string, attrOrTopo: string = "Attr", orientation: string = 'x') {
+    console.log(nodeToSelect, attrOrTopo, orientation)
+    let selection = d3.selectAll(".highlight" + attrOrTopo + rowOrCol)
       .filter((d, i) => {
-          if(attrOrTopo == "Attr" && d.index == null){
-            console.log(d);
-             // attr
-             return nodeToSelect.index == d[i][orientation];
-          }
+        if (attrOrTopo == "Attr" && d.index == null) {
           console.log(d);
-           //topology
-          return nodeToSelect.index == d.index;
+          // attr
+          return nodeToSelect.index == d[i][orientation];
+        }
+        console.log(d);
+        //topology
+        return nodeToSelect.index == d.index;
       })
-      console.log(selection);
+    console.log(selection);
     return selection;
   }
 

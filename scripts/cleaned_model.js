@@ -539,15 +539,22 @@ var View = /** @class */ (function () {
             .attr("text-anchor", "end")
             .style("font-size", 7.5 + "px")
             .text(function (d, i) { return _this.nodes[i].screen_name; })
-            .on('click', function (d) { console.log(d); _this.selectNode(d[0].rowid); });
+            .on('click', function (d, i, nodes) {
+            d3.select(nodes[i]).classed('selected', !_this.controller.configuration.state.columnSelectedNodes.includes(d[0].rowid));
+            _this.selectNode(d[0].rowid);
+        });
         this.edgeColumns.append("text")
             .attr("class", "label")
             .attr("y", 0)
             .attr("dy", ".32em")
             .attr("text-anchor", "start")
             .style("font-size", 7.5 + "px")
-            .text(function (d, i) { return _this.nodes[i].screen_name; });
-        //.on('click',d=>{console.log(d);this.selectNode(d[0].colid);});
+            .text(function (d, i) { return _this.nodes[i].screen_name; })
+            .on('click', function (d, index, nodes) {
+            d3.select(nodes[index]).classed('selected', !_this.controller.configuration.state.columnSelectedNodes.includes(d[index].rowid));
+            console.log(d[index].rowid);
+            _this.selectColumnNode(d[index].rowid);
+        });
         this.tooltip = d3.select("body")
             .append("div")
             .attr("class", "tooltip")
@@ -582,14 +589,138 @@ var View = /** @class */ (function () {
         d3.selectAll('#highlight' + attrOrTopo + rowOrCol + nodeID)
             .classed('hovered', true);
     };
+    //u: BCC    BCCINVITADOS2019
+    //p:
+    //private selectedNodes : any;
+    // DOESNT GET ADDED
+    View.prototype.addHighlightNode = function (addingNode) {
+        // if node is in
+        var nodeIndex = this.nodes.findIndex(function (item, i) {
+            return item.screen_name == addingNode;
+        });
+        console.log(this.matrix[nodeIndex]);
+        for (var i = 0; i < this.matrix[0].length; i++) {
+            console.log(this.matrix[i][nodeIndex].z, this.matrix[i][nodeIndex]);
+            if (this.matrix[i][nodeIndex].z > 0) {
+                var nodeID = this.matrix[i][nodeIndex].rowid;
+                console.log(nodeID);
+                if (this.controller.configuration.state.highlightedNodes.hasOwnProperty(nodeID) && !this.controller.configuration.state.highlightedNodes[nodeID].includes(addingNode)) {
+                    // if array exists, add it
+                    console.log(this.controller.configuration.state.highlightedNodes[nodeID]);
+                    this.controller.configuration.state.highlightedNodes[nodeID].push(addingNode);
+                }
+                else {
+                    // if array non exist, create it and add node
+                    console.log(this.controller.configuration.state.highlightedNodes);
+                    this.controller.configuration.state.highlightedNodes[nodeID] = [addingNode];
+                    console.log(this.controller.configuration.state.highlightedNodes);
+                }
+            }
+        }
+    };
+    /**
+     * [removeHighlightNode description]
+     * @param  nodeID       [description]
+     * @param  removingNode [description]
+     * @return              [description]
+     */
+    View.prototype.removeHighlightNode = function (removingNode) {
+        // remove from selected nodes
+        console.log(this.controller.configuration.state.columnSelectedNodes);
+        console.log(this.controller.configuration.state.highlightedNodes);
+        for (var nodeID in this.controller.configuration.state.highlightedNodes) {
+            console.log('to_remove_Hightlight', nodeID);
+            //finds the position of removing node in the nodes array
+            var index = this.controller.configuration.state.highlightedNodes[nodeID].indexOf(removingNode);
+            // keep on removing all places of removing node
+            if (index > -1) {
+                this.controller.configuration.state.highlightedNodes[nodeID].splice(index, 1);
+                // delete properties if no nodes left
+                if (this.controller.configuration.state.highlightedNodes[nodeID].length == 0) {
+                    delete this.controller.configuration.state.highlightedNodes[nodeID];
+                }
+                console.log(this.controller.configuration.state.highlightedNodes[nodeID]);
+            }
+        }
+    };
+    View.prototype.renderHighlightNodes = function () {
+        //for
+        // remove all highlights
+        d3.selectAll('.neighborSelected').classed('neighborSelected', false);
+        // re add all highlights
+        for (var nodeID in this.controller.configuration.state.highlightedNodes) {
+            console.log("node to be highlighted", nodeID);
+            d3.select('#highlight' + 'Topo' + 'Row' + nodeID)
+                .classed('neighborSelected', true);
+            d3.select('#highlight' + 'Attr' + 'Row' + nodeID)
+                .classed('neighborSelected', true);
+        }
+    };
     View.prototype.selectNode = function (nodeID) {
         var attrRow = d3.selectAll('#highlight' + 'Attr' + 'Row' + nodeID);
         attrRow
             .classed('selected', !attrRow.classed('selected'));
-        console.log(attrRow, attrRow.classed('selected'));
         var topoRow = d3.selectAll('#highlight' + 'Topo' + 'Row' + nodeID);
         topoRow
             .classed('selected', !topoRow.classed('selected'));
+    };
+    View.prototype.selectColumnNode = function (nodeID) {
+        var nodeIndex = this.controller.configuration.state.columnSelectedNodes.indexOf(nodeID);
+        console.log(nodeIndex);
+        if (nodeIndex > -1) {
+            // find all neighbors and remove them
+            console.log("remove node", this.controller.configuration.state.columnSelectedNodes, this.controller.configuration.state.columnSelectedNodes.splice(nodeIndex, 1));
+            this.removeHighlightNode(nodeID);
+            this.controller.configuration.state.columnSelectedNodes.splice(nodeIndex, 1);
+            console.log("remove node", this.controller.configuration.state.columnSelectedNodes);
+            // remove node from column selected nodes
+        }
+        else {
+            console.log("add node", nodeID);
+            this.addHighlightNode(nodeID);
+            this.controller.configuration.state.columnSelectedNodes.push(nodeID);
+        }
+        console.log(this.controller.configuration.state.columnSelectedNodes);
+        this.renderHighlightNodes();
+        /*let index = this.controller.configuration.state.selectedNodes.indexOf(nodeID);
+    
+        if(index > -1){ // if in selected node, remove it (unless it is )
+          this.controller.configuration.state.selectedNodes.splice(index,1);
+          //find all partner nodes
+          // if still exists keep,
+        } else {
+          // add node
+          this.controller.configuration.state.selectedNodes.push(nodeID);
+    
+        }
+    
+        let attrRow = d3.selectAll('#highlight'+'Attr'+'Row'+nodeID);
+        attrRow
+          .classed('selected',(d)=>{
+            // need to remove if clicked, but not if clicked from another node
+            // store hashmap with counts
+            // iterate through each time a click and change values
+            // if lengths > 0
+    
+            // Add all elements to set
+            // at each click, readd and remove all
+    
+            // if already selected, remove  and uncolor nodes
+            // if not, add and color nodes
+    
+    
+    
+            return !
+          });//!attrRow.classed('selected')
+    
+        console.log(attrRow,attrRow.classed('selected'));
+    
+        let topoRow = d3.selectAll('#highlight'+'Topo'+'Row'+nodeID);
+        topoRow
+            .classed('selected',!topoRow.classed('selected'));
+    
+    
+            */
     };
     /**
      * [sort description]
