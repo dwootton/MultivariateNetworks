@@ -647,7 +647,10 @@ class View {
       .style("font-size", 7.5 + "px")
       .text((d, i) => this.nodes[i].screen_name)
       .on('click', (d,i,nodes) => {
-        d3.select(nodes[i]).classed('selected',!this.controller.configuration.state.columnSelectedNodes.includes(d[0].rowid));
+        d3.select(nodes[i]).classed('selected',(data)=>{
+          console.log(data,data[0]);
+          return !this.controller.configuration.state.selectedNodes.includes(data[0].rowid)
+        });
 
         this.selectNode(d[0].rowid);
        });
@@ -791,6 +794,12 @@ class View {
   }
 
   selectNode(nodeID: string) {
+    let index = this.controller.configuration.state.selectedNodes.indexOf(nodeID)
+    if(index > -1){
+      this.controller.configuration.state.selectedNodes.splice(index,1);
+    } else {
+      this.controller.configuration.state.selectedNodes.push(nodeID);
+    }
     let attrRow = d3.selectAll('#highlight' + 'Attr' + 'Row' + nodeID);
     attrRow
       .classed('selected', !attrRow.classed('selected'));
@@ -798,6 +807,7 @@ class View {
     let topoRow = d3.selectAll('#highlight' + 'Topo' + 'Row' + nodeID);
     topoRow
       .classed('selected', !topoRow.classed('selected'));
+    console.log(attrRow,topoRow)
   }
 
   selectColumnNode(nodeID) {
