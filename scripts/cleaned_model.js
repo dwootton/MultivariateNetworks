@@ -35,7 +35,7 @@ var Model = /** @class */ (function () {
         tweets = tweets.tweets;
         tweets.map(function (tweet) {
             //if a tweet mentions a person, create a 'mentions' edge between the tweeter, and the mentioned person.
-            if (_this.controller.configuration.edgeTypes.includes("mention")) {
+            if (_this.controller.configuration.edgeTypes.includes("mentions")) {
                 tweet.entities.user_mentions.map(function (mention) {
                     var source = graph.nodes.find(function (n) { return n.id === tweet.user.id; });
                     var target = graph.nodes.find(function (n) { return n.id === mention.id; });
@@ -124,20 +124,36 @@ var Model = /** @class */ (function () {
             rowNode.id = +rowNode.id;
             rowNode.y = i;
             /* matrix used for edge attributes, otherwise should we hide */
-            _this.matrix[i] = _this.nodes.map(function (colNode) { return { rowid: rowNode.screen_name, colid: colNode.screen_name, x: colNode.index, y: rowNode.index, z: 0 }; });
+            _this.matrix[i] = _this.nodes.map(function (colNode) { return { rowid: rowNode.screen_name, colid: colNode.screen_name, x: colNode.index, y: rowNode.index, z: 0, reply: 0, retweet: 0, mentions: 0 }; });
         });
+        this.maxTracker = { 'reply': 0, 'retweet': 0, 'mentions': 0 };
         // Convert links to matrix; count character occurrences.
         this.edges.forEach(function (link) {
             var addValue = 0;
+            console.log('first', link);
             if (link.type == "reply") {
                 addValue = 3;
+                _this.matrix[_this.idMap[link.source]][_this.idMap[link.target]].reply += 1;
+                if (_this.matrix[_this.idMap[link.source]][_this.idMap[link.target]].reply > _this.maxTracker['reply']) {
+                    _this.maxTracker['reply'] = _this.matrix[_this.idMap[link.source]][_this.idMap[link.target]].reply;
+                }
             }
             else if (link.type == "retweet") {
                 addValue = 2;
+                _this.matrix[_this.idMap[link.source]][_this.idMap[link.target]].retweet += 1;
+                console.log(_this.matrix[_this.idMap[link.source]][_this.idMap[link.target]]);
+                if (_this.matrix[_this.idMap[link.source]][_this.idMap[link.target]].retweet > _this.maxTracker['retweet'] && _this.matrix[_this.idMap[link.source]][_this.idMap[link.target]].retweet !== null) {
+                    _this.maxTracker['retweet'] = _this.matrix[_this.idMap[link.source]][_this.idMap[link.target]].retweet;
+                }
             }
             else if (link.type == "mentions") {
                 addValue = 1;
+                _this.matrix[_this.idMap[link.source]][_this.idMap[link.target]].mentions += 1;
+                if (_this.matrix[_this.idMap[link.source]][_this.idMap[link.target]].mentions > _this.maxTracker['mentions']) {
+                    _this.maxTracker['mentions'] = _this.matrix[_this.idMap[link.source]][_this.idMap[link.target]].mentions;
+                }
             }
+            console.log("Max", _this.maxTracker);
             /* could be used for varying edge types */
             _this.matrix[_this.idMap[link.source]][_this.idMap[link.target]].z += addValue;
             _this.matrix[_this.idMap[link.source]].count += 1;
@@ -413,6 +429,19 @@ var View = /** @class */ (function () {
             // select node and turn orange ish
             // highlight other nodes (add jumps?)
         });
+        this.colorScales = {};
+        this.controller.configuration.edgeTypes.forEach(function (type) {
+            // calculate the max
+            var extent = [0, _this.controller.model.maxTracker[type]];
+            console.log(extent);
+            // set up scale
+            var scale = d3.scaleSqrt().domain(extent).range(["white", _this.controller.configuration.style.edgeColors[type]]);
+            // store scales
+            _this.colorScales[type] = scale;
+            console.log(type, _this.colorScales[type].domain(), _this.colorScales[type].range());
+        });
+        this.generateColorLegend();
+        console.log(this.colorScales);
         var squares = this.edgeRows.selectAll(".cell")
             .data(function (d) { return d; /*.filter(item => item.z > 0)*/ })
             .enter().append("rect")
@@ -421,16 +450,19 @@ var View = /** @class */ (function () {
             //.filter(d=>{return d.item >0})
             .attr("width", this.verticalScale.bandwidth())
             .attr("height", this.verticalScale.bandwidth())
-            //.style("fill", d => this.opacityScale(d.z))
+            //.style("fill", d => this.colorScales(d.z))
             .style("fill", function (d) {
-            if (d.z == 3) {
-                return _this.controller.configuration.style.edgeColors["reply"]; // reply
+            // choose between replies retweets or mentions
+            // filter to only see some interaction edgeTypes
+            if (d.reply !== 0) {
+                console.log(d);
+                return _this.colorScales["reply"](d.reply);
             }
-            else if (d.z == 2) {
-                return _this.controller.configuration.style.edgeColors["retweet"];
+            else if (d.retweet !== 0) {
+                return _this.colorScales["retweet"](d.retweet);
             }
-            else if (d.z == 1) {
-                return _this.controller.configuration.style.edgeColors["mentions"];
+            else if (d.mentions !== 0) {
+                return _this.colorScales["mentions"](d.mentions);
             }
             else if (d.z > 3) {
                 return "pink";
@@ -569,6 +601,45 @@ var View = /** @class */ (function () {
      */
     View.prototype.mouseoverEdge = function () {
     };
+    View.prototype.linspace = function (startValue, stopValue, cardinality) {
+        var arr = [];
+        var step = (stopValue - startValue) / (cardinality - 1);
+        for (var i = 0; i < cardinality; i++) {
+            arr.push(startValue + (step * i));
+        }
+        return arr;
+    };
+    View.prototype.generateColorLegend = function () {
+        var yOffset = 10;
+        var xOffset = 10;
+        var _loop_1 = function (type) {
+            var scale = this_1.colorScales[type];
+            console.log(scale);
+            var extent = scale.domain();
+            console.log(extent);
+            var sampleNumbers = this_1.linspace(extent[0], extent[1], 5);
+            var svg = d3.select('#legends').append("g")
+                .attr("id", "legendLinear" + type)
+                .attr("transform", "translate(" + xOffset + "," + yOffset + ")");
+            var legend = svg
+                .data(sampleNumbers)
+                .append('rect')
+                .attr('width', 10)
+                .attr('height', 4)
+                .attr('fill', function (d) {
+                console.log(d);
+                return scale(d);
+            })
+                .attr('x', function (d, i) { return i * 15; })
+                .attr('y', 0);
+            yOffset += 10;
+            console.log(legend);
+        };
+        var this_1 = this;
+        for (var type in this.colorScales) {
+            _loop_1(type);
+        }
+    };
     View.prototype.highlightRow = function (node) {
         var nodeID = node.screen_name;
         if (node.screen_name == null) {
@@ -675,6 +746,11 @@ var View = /** @class */ (function () {
             .classed('selected', !topoRow.classed('selected'));
         console.log(attrRow, topoRow);
     };
+    /**
+     * [selectColumnNode description]
+     * @param  nodeID [description]
+     * @return        [description]
+     */
     View.prototype.selectColumnNode = function (nodeID) {
         var nodeIndex = this.controller.configuration.state.columnSelectedNodes.indexOf(nodeID);
         console.log(nodeIndex);
@@ -856,18 +932,7 @@ var View = /** @class */ (function () {
             d3.selectAll('.highlightTopoRow')
                 .classed('hovered', false);
         });
-        var columns = [
-            "followers_count",
-            "query_tweet_count",
-            "friends_count",
-            "statuses_count",
-            "listed_count",
-            "favourites_count",
-            "count_followers_in_query",
-            // string "screen_name",
-            "influential",
-            "original" // bool, maybe green?
-        ];
+        var columns = this.controller.configuration.columns;
         // Based on the data type set widths
         // numerical are 50, bool are a verticle bandwidth * 2
         //
@@ -878,23 +943,21 @@ var View = /** @class */ (function () {
         // Calculate Column Scale
         var columnRange = [];
         var xRange = 0;
+        var columnWidth = 450 / columns.length;
         columns.forEach(function (col) {
             // calculate range
             columnRange.push(xRange);
-            var colWidth = 0;
-            if (col == "influential" || col == "original") {
+            if (col == "influential" || col == "original") { //if ordinal
                 // append colored blocks
                 var scale = d3.scaleLinear(); //.domain([true,false]).range([barMargin.left, colWidth-barMargin.right]);
                 attributeScales[col] = scale;
-                colWidth = 40;
             }
             else {
                 var range = d3.extent(_this.nodes, function (d) { return d[col]; });
-                colWidth = 50;
-                var scale = d3.scaleLinear().domain(range).range([barMargin.left, colWidth - barMargin.right]);
+                var scale = d3.scaleLinear().domain(range).range([barMargin.left, columnWidth - barMargin.right]);
                 attributeScales[col] = scale;
             }
-            xRange += colWidth;
+            xRange += columnWidth;
         });
         // need max and min of each column
         /*this.barWidthScale = d3.scaleLinear()
@@ -903,6 +966,38 @@ var View = /** @class */ (function () {
         this.columnScale.range(columnRange);
         for (var _i = 0, _a = Object.entries(attributeScales); _i < _a.length; _i++) {
             var _b = _a[_i], column = _b[0], scale = _b[1];
+            if (column == "influential" || column == "original") {
+                var circs = this.attributes.append("g")
+                    .attr("transform", "translate(" + this.columnScale(column) + "," + -15 + ")");
+                var circ1 = circs
+                    .append('g')
+                    .attr('transform', 'translate(10,5)');
+                circ1
+                    .append('circle')
+                    .attr('cx', 0)
+                    .attr('cy', -20)
+                    .attr('fill', "green")
+                    .attr('r', 4);
+                circ1
+                    .append('text')
+                    .text('T')
+                    .attr('text-anchor', 'middle');
+                var circs2 = circs
+                    .append('g')
+                    .attr('transform', 'translate(35,5)');
+                circs2
+                    .append('circle')
+                    .attr('cx', 0)
+                    .attr('cy', -20)
+                    .attr('fill', "brown")
+                    .attr('r', 4);
+                circs2
+                    .append('text')
+                    .text('F')
+                    .attr('text-anchor', 'middle');
+                console.log(circs);
+                continue;
+            }
             this.attributes.append("g")
                 .attr("class", "attr-axis")
                 .attr("transform", "translate(" + this.columnScale(column) + "," + -15 + ")")
@@ -920,6 +1015,18 @@ var View = /** @class */ (function () {
         /* Create data columns data */
         columns.forEach(function (c) {
             var columnPosition = _this.columnScale(c);
+            if (c == "influential" || c == "original") {
+                _this.attributeRows
+                    .append('circle')
+                    .attr('cx', columnPosition + columnWidth / 2)
+                    .attr('cy', _this.verticalScale.bandwidth() / 2)
+                    .attr('fill', function (d) {
+                    console.log(d);
+                    return (d[c] ? "green" : "brown");
+                })
+                    .attr('r', 2.5);
+                return;
+            }
             _this.attributeRows
                 .append("rect")
                 .attr("class", "glyph")

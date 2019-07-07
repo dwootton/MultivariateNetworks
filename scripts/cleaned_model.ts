@@ -25,7 +25,7 @@ class Model {
     tweets.map((tweet) => {
 
       //if a tweet mentions a person, create a 'mentions' edge between the tweeter, and the mentioned person.
-      if (this.controller.configuration.edgeTypes.includes("mention")) {
+      if (this.controller.configuration.edgeTypes.includes("mentions")) {
         tweet.entities.user_mentions.map(mention => {
           let source = graph.nodes.find(n => n.id === tweet.user.id);
           let target = graph.nodes.find(n => n.id === mention.id);
@@ -143,7 +143,7 @@ class Model {
     this.order = order;
     return order;
   }
-
+  private maxTracker: any;
   /**
    * [processData description]
    * @return [description]
@@ -165,23 +165,38 @@ class Model {
       rowNode.y = i;
 
       /* matrix used for edge attributes, otherwise should we hide */
-      this.matrix[i] = this.nodes.map(function(colNode) { return { rowid: rowNode.screen_name, colid: colNode.screen_name, x: colNode.index, y: rowNode.index, z: 0 }; });
+      this.matrix[i] = this.nodes.map(function(colNode) { return { rowid: rowNode.screen_name, colid: colNode.screen_name, x: colNode.index, y: rowNode.index, z: 0 ,reply: 0,retweet:0,mentions:0}; });
     });
 
-
+    this.maxTracker = {'reply':0,'retweet':0,'mentions':0}
     // Convert links to matrix; count character occurrences.
     this.edges.forEach((link) => {
       let addValue = 0;
+      console.log('first',link);
       if (link.type == "reply") {
         addValue = 3;
+        this.matrix[this.idMap[link.source]][this.idMap[link.target]].reply += 1;
+        if(this.matrix[this.idMap[link.source]][this.idMap[link.target]].reply > this.maxTracker['reply']){
+          this.maxTracker['reply'] =  this.matrix[this.idMap[link.source]][this.idMap[link.target]].reply
+        }
       } else if (link.type == "retweet") {
         addValue = 2;
+        this.matrix[this.idMap[link.source]][this.idMap[link.target]].retweet += 1;
+        console.log(this.matrix[this.idMap[link.source]][this.idMap[link.target]]);
+        if(this.matrix[this.idMap[link.source]][this.idMap[link.target]].retweet > this.maxTracker['retweet'] && this.matrix[this.idMap[link.source]][this.idMap[link.target]].retweet !== null){
+          this.maxTracker['retweet'] =  this.matrix[this.idMap[link.source]][this.idMap[link.target]].retweet
+        }
       } else if (link.type == "mentions") {
         addValue = 1;
+        this.matrix[this.idMap[link.source]][this.idMap[link.target]].mentions += 1;
+        if(this.matrix[this.idMap[link.source]][this.idMap[link.target]].mentions > this.maxTracker['mentions']){
+          this.maxTracker['mentions'] =  this.matrix[this.idMap[link.source]][this.idMap[link.target]].mentions
+        }
       }
-
+      console.log("Max",this.maxTracker);
       /* could be used for varying edge types */
       this.matrix[this.idMap[link.source]][this.idMap[link.target]].z += addValue;
+
       this.matrix[this.idMap[link.source]].count += 1;
       if (this.controller.configuration.isDirected) {
         this.matrix[this.idMap[link.target]][this.idMap[link.source]].z += addValue;
@@ -335,6 +350,7 @@ class View {
     // process links for neighbors?
 
   }
+  private colorScales: any;
   /**
    * Initalizes the edges view, renders SVG
    * @return None
@@ -511,7 +527,21 @@ class View {
       })
 
 
+    this.colorScales = {};
 
+    this.controller.configuration.edgeTypes.forEach(type=>{
+      // calculate the max
+      let extent = [0,this.controller.model.maxTracker[type]]
+      console.log(extent);
+      // set up scale
+      let scale = d3.scaleSqrt().domain(extent).range(["white",this.controller.configuration.style.edgeColors[type]])
+      // store scales
+      this.colorScales[type] = scale;
+      console.log(type,this.colorScales[type].domain(),this.colorScales[type].range());
+    })
+
+    this.generateColorLegend();
+    console.log(this.colorScales);
     var squares = this.edgeRows.selectAll(".cell")
       .data(d => { return d/*.filter(item => item.z > 0)*/ })
       .enter().append("rect")
@@ -520,14 +550,18 @@ class View {
       //.filter(d=>{return d.item >0})
       .attr("width", this.verticalScale.bandwidth())
       .attr("height", this.verticalScale.bandwidth())
-      //.style("fill", d => this.opacityScale(d.z))
+      //.style("fill", d => this.colorScales(d.z))
       .style("fill", d => {
-        if (d.z == 3) {
-          return this.controller.configuration.style.edgeColors["reply"]; // reply
-        } else if (d.z == 2) {
-          return this.controller.configuration.style.edgeColors["retweet"];
-        } else if (d.z == 1) {
-          return this.controller.configuration.style.edgeColors["mentions"];
+        // choose between replies retweets or mentions
+        // filter to only see some interaction edgeTypes
+
+        if (d.reply !== 0) {
+          console.log(d);
+          return this.colorScales["reply"](d.reply);
+        } else if (d.retweet !== 0) {
+          return this.colorScales["retweet"](d.retweet);
+        } else if (d.mentions !== 0) {
+          return this.colorScales["mentions"](d.mentions);
         } else if (d.z > 3) {
           return "pink";
         }
@@ -686,6 +720,53 @@ class View {
   mouseoverEdge() {
 
   }
+  linspace(startValue, stopValue, cardinality) {
+    var arr = [];
+    var step = (stopValue - startValue) / (cardinality - 1);
+    for (var i = 0; i < cardinality; i++) {
+      arr.push(startValue + (step * i));
+    }
+    return arr;
+  }
+
+  generateColorLegend(){
+    let yOffset = 10;
+    let xOffset = 10;
+    for(let type in this.colorScales){
+
+      let scale = this.colorScales[type];
+      console.log(scale)
+      let extent = scale.domain();
+      console.log(extent);
+      let sampleNumbers = this.linspace(extent[0],extent[1],5);
+      let svg = d3.select('#legends').append("g")
+        .attr("id", "legendLinear" + type)
+        .attr("transform", "translate("+xOffset+","+yOffset+")");
+      let legend = svg
+          .data(sampleNumbers)
+          .append('rect')
+          .attr('width',10)
+          .attr('height',4)
+          .attr('fill',(d)=>{
+            console.log(d);
+            return scale(d);
+          })
+          .attr('x',(d,i)=>i*15)
+          .attr('y',0);
+
+
+      yOffset += 10;
+
+
+      console.log(legend)
+
+    }
+  }
+
+
+
+
+
 
   highlightRow(node) {
     let nodeID = node.screen_name;
@@ -810,6 +891,11 @@ class View {
     console.log(attrRow,topoRow)
   }
 
+  /**
+   * [selectColumnNode description]
+   * @param  nodeID [description]
+   * @return        [description]
+   */
   selectColumnNode(nodeID) {
     let nodeIndex = this.controller.configuration.state.columnSelectedNodes.indexOf(nodeID);
     console.log(nodeIndex);
@@ -1019,18 +1105,8 @@ class View {
       })
 
 
-    let columns = [
-      "followers_count",// numerical
-      "query_tweet_count",// numerical
-      "friends_count",// numerical
-      "statuses_count", // numerical
-      "listed_count", // numerical
-      "favourites_count", // numerical
-      "count_followers_in_query",  // numerical
-      // string "screen_name",
-      "influential", // bool, maybe gold?
-      "original" // bool, maybe green?
-    ];
+    let columns = this.controller.configuration.columns;
+
     // Based on the data type set widths
     // numerical are 50, bool are a verticle bandwidth * 2
     //
@@ -1046,6 +1122,8 @@ class View {
     // Calculate Column Scale
     let columnRange = []
     let xRange = 0;
+    let columnWidth  = 450/columns.length;
+
 
 
 
@@ -1053,21 +1131,18 @@ class View {
       // calculate range
       columnRange.push(xRange);
 
-      let colWidth = 0;
-      if (col == "influential" || col == "original") {
+      if (col == "influential" || col == "original") { //if ordinal
         // append colored blocks
         let scale = d3.scaleLinear()//.domain([true,false]).range([barMargin.left, colWidth-barMargin.right]);
 
         attributeScales[col] = scale;
-        colWidth = 40;
       } else {
         let range = d3.extent(this.nodes, (d) => { return d[col] })
-        colWidth = 50;
-        let scale = d3.scaleLinear().domain(range).range([barMargin.left, colWidth - barMargin.right]);
+        let scale = d3.scaleLinear().domain(range).range([barMargin.left, columnWidth - barMargin.right]);
         attributeScales[col] = scale;
       }
 
-      xRange += colWidth;
+      xRange += columnWidth;
     })
 
 
@@ -1087,6 +1162,39 @@ class View {
     this.columnScale.range(columnRange);
 
     for (let [column, scale] of Object.entries(attributeScales)) {
+      if(column == "influential" || column == "original"){
+        let circs = this.attributes.append("g")
+          .attr("transform", "translate(" + this.columnScale(column) + "," + -15 + ")");
+        let circ1 = circs
+          .append('g')
+            .attr('transform','translate(10,5)')
+        circ1
+            .append('circle')
+              .attr('cx',0)
+              .attr('cy',-20)
+              .attr('fill',"green")
+              .attr('r',4)
+
+        circ1
+            .append('text')
+              .text('T')
+              .attr('text-anchor','middle')
+        let circs2 = circs
+          .append('g')
+            .attr('transform','translate(35,5)')
+        circs2
+            .append('circle')
+              .attr('cx',0)
+              .attr('cy',-20)
+              .attr('fill',"brown")
+              .attr('r',4)
+          circs2
+            .append('text')
+              .text('F')
+              .attr('text-anchor','middle')
+        console.log(circs);
+        continue;
+      }
       this.attributes.append("g")
         .attr("class", "attr-axis")
         .attr("transform", "translate(" + this.columnScale(column) + "," + -15 + ")")
@@ -1099,8 +1207,8 @@ class View {
             return d;
           }))
         .selectAll('text')
-        .style("text-anchor", function(d, i) { return i % 2 ? "end" : "start" })
-        ;
+        .style("text-anchor", function(d, i) { return i % 2 ? "end" : "start" });
+
     }
 
 
@@ -1108,6 +1216,20 @@ class View {
     /* Create data columns data */
     columns.forEach((c) => {
       let columnPosition = this.columnScale(c);
+
+      if(c == "influential" || c == "original"){
+        this.attributeRows
+          .append('circle')
+            .attr('cx',columnPosition + columnWidth/2)
+            .attr('cy',this.verticalScale.bandwidth()/2)
+            .attr('fill',(d)=>{
+              console.log(d);
+              return (d[c] ? "green":"brown");
+            })
+            .attr('r',2.5);
+        return;
+      }
+
 
 
       this.attributeRows
