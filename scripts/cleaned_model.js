@@ -612,28 +612,64 @@ var View = /** @class */ (function () {
     View.prototype.generateColorLegend = function () {
         var yOffset = 10;
         var xOffset = 10;
+        var rectWidth = 25;
+        var rectHeight = 10;
+        var legendWidth = 200;
         var _loop_1 = function (type) {
             var scale = this_1.colorScales[type];
             console.log(scale);
             var extent = scale.domain();
-            console.log(extent);
+            console.log(extent, "translate(" + xOffset + "," + yOffset + ")");
             var sampleNumbers = this_1.linspace(extent[0], extent[1], 5);
+            console.log(sampleNumbers);
             var svg = d3.select('#legends').append("g")
                 .attr("id", "legendLinear" + type)
-                .attr("transform", "translate(" + xOffset + "," + yOffset + ")");
-            var legend = svg
+                .attr("transform", function (d, i) { return "translate(" + xOffset + "," + yOffset + ")"; })
+                .on('click', function () {
+                console.log(type);
+                alert(type);
+            });
+            svg.append('rect')
+                .attr('stroke', 'gray')
+                .attr('stroke-width', 1)
+                .attr('width', 6 * rectWidth)
+                .attr('height', 55)
+                .attr('fill-opacity', 0)
+                .attr('x', 0)
+                .attr('y', -9)
+                .attr('ry', 2)
+                .attr('rx', 2);
+            svg.append('text')
+                .attr('x', 6 * rectWidth / 2)
+                .attr('y', 5)
+                .attr('text-anchor', 'middle')
+                .text("Number of " + type);
+            var groups = svg.selectAll('rect')
                 .data(sampleNumbers)
+                .enter()
+                .append('g')
+                .attr('transform', function (d, i) { return 'translate(' + i * (rectWidth + 5) + ',' + 10 + ')'; });
+            groups
                 .append('rect')
-                .attr('width', 10)
-                .attr('height', 4)
+                .attr('width', rectWidth)
+                .attr('height', rectHeight)
                 .attr('fill', function (d) {
                 console.log(d);
                 return scale(d);
             })
-                .attr('x', function (d, i) { return i * 15; })
-                .attr('y', 0);
-            yOffset += 10;
-            console.log(legend);
+                .attr('stroke', function (d) {
+                return d == 0 ? '#bbb' : 'white';
+            });
+            groups
+                .append('text')
+                .attr('x', rectWidth / 2)
+                .attr('y', 30)
+                .attr('text-anchor', 'middle')
+                .text(function (d) {
+                return Math.round(d);
+            });
+            xOffset += legendWidth;
+            ;
         };
         var this_1 = this;
         for (var type in this.colorScales) {

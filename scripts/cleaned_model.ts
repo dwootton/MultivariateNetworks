@@ -732,33 +732,75 @@ class View {
   generateColorLegend(){
     let yOffset = 10;
     let xOffset = 10;
+    let rectWidth = 25
+    let rectHeight = 10;
+    let legendWidth = 200;
     for(let type in this.colorScales){
 
       let scale = this.colorScales[type];
       console.log(scale)
       let extent = scale.domain();
-      console.log(extent);
+      console.log(extent,"translate("+xOffset+","+yOffset+")");
       let sampleNumbers = this.linspace(extent[0],extent[1],5);
+      console.log(sampleNumbers);
       let svg = d3.select('#legends').append("g")
         .attr("id", "legendLinear" + type)
-        .attr("transform", "translate("+xOffset+","+yOffset+")");
-      let legend = svg
+        .attr("transform", (d,i)=>"translate("+xOffset+","+yOffset+")")
+        .on('click',()=>{
+          console.log(type);
+          alert(type);
+        });
+
+
+      svg.append('rect')
+        .attr('stroke','gray')
+        .attr('stroke-width',1)
+        .attr('width',6*rectWidth)
+        .attr('height',55)
+        .attr('fill-opacity',0)
+        .attr('x',0)
+        .attr('y',-9)
+        .attr('ry',2)
+        .attr('rx',2)
+
+      svg.append('text')
+        .attr('x',6*rectWidth/2)
+        .attr('y',5)
+        .attr('text-anchor','middle')
+        .text("Number of "+type)
+
+      let groups = svg.selectAll('rect')
           .data(sampleNumbers)
+          .enter()
+          .append('g')
+          .attr('transform',(d,i)=>'translate('+i*(rectWidth+5)+','+10+')')
+
+      groups
           .append('rect')
-          .attr('width',10)
-          .attr('height',4)
+          .attr('width',rectWidth)
+          .attr('height',rectHeight)
           .attr('fill',(d)=>{
             console.log(d);
             return scale(d);
           })
-          .attr('x',(d,i)=>i*15)
-          .attr('y',0);
+          .attr('stroke',(d)=>{
+            return d==0 ? '#bbb':'white';
+          })
+
+     groups
+        .append('text')
+        .attr('x',rectWidth/2)
+        .attr('y',30)
+        .attr('text-anchor','middle')
+        .text(d=>{
+            return Math.round(d);
+          })
 
 
-      yOffset += 10;
+      xOffset += legendWidth;
+;
 
 
-      console.log(legend)
 
     }
   }
