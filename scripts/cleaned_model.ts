@@ -165,35 +165,35 @@ class Model {
       rowNode.y = i;
 
       /* matrix used for edge attributes, otherwise should we hide */
-      this.matrix[i] = this.nodes.map(function(colNode) { return { rowid: rowNode.screen_name, colid: colNode.screen_name, x: colNode.index, y: rowNode.index, z: 0 ,reply: 0,retweet:0,mentions:0}; });
+      this.matrix[i] = this.nodes.map(function(colNode) { return { rowid: rowNode.screen_name, colid: colNode.screen_name, x: colNode.index, y: rowNode.index, z: 0, reply: 0, retweet: 0, mentions: 0 }; });
     });
 
-    this.maxTracker = {'reply':0,'retweet':0,'mentions':0}
+    this.maxTracker = { 'reply': 0, 'retweet': 0, 'mentions': 0 }
     // Convert links to matrix; count character occurrences.
     this.edges.forEach((link) => {
       let addValue = 0;
-      console.log('first',link);
+      console.log('first', link);
       if (link.type == "reply") {
         addValue = 3;
         this.matrix[this.idMap[link.source]][this.idMap[link.target]].reply += 1;
-        if(this.matrix[this.idMap[link.source]][this.idMap[link.target]].reply > this.maxTracker['reply']){
-          this.maxTracker['reply'] =  this.matrix[this.idMap[link.source]][this.idMap[link.target]].reply
+        if (this.matrix[this.idMap[link.source]][this.idMap[link.target]].reply > this.maxTracker['reply']) {
+          this.maxTracker['reply'] = this.matrix[this.idMap[link.source]][this.idMap[link.target]].reply
         }
       } else if (link.type == "retweet") {
         addValue = 2;
         this.matrix[this.idMap[link.source]][this.idMap[link.target]].retweet += 1;
         console.log(this.matrix[this.idMap[link.source]][this.idMap[link.target]]);
-        if(this.matrix[this.idMap[link.source]][this.idMap[link.target]].retweet > this.maxTracker['retweet'] && this.matrix[this.idMap[link.source]][this.idMap[link.target]].retweet !== null){
-          this.maxTracker['retweet'] =  this.matrix[this.idMap[link.source]][this.idMap[link.target]].retweet
+        if (this.matrix[this.idMap[link.source]][this.idMap[link.target]].retweet > this.maxTracker['retweet'] && this.matrix[this.idMap[link.source]][this.idMap[link.target]].retweet !== null) {
+          this.maxTracker['retweet'] = this.matrix[this.idMap[link.source]][this.idMap[link.target]].retweet
         }
       } else if (link.type == "mentions") {
         addValue = 1;
         this.matrix[this.idMap[link.source]][this.idMap[link.target]].mentions += 1;
-        if(this.matrix[this.idMap[link.source]][this.idMap[link.target]].mentions > this.maxTracker['mentions']){
-          this.maxTracker['mentions'] =  this.matrix[this.idMap[link.source]][this.idMap[link.target]].mentions
+        if (this.matrix[this.idMap[link.source]][this.idMap[link.target]].mentions > this.maxTracker['mentions']) {
+          this.maxTracker['mentions'] = this.matrix[this.idMap[link.source]][this.idMap[link.target]].mentions
         }
       }
-      console.log("Max",this.maxTracker);
+      console.log("Max", this.maxTracker);
       /* could be used for varying edge types */
       this.matrix[this.idMap[link.source]][this.idMap[link.target]].z += addValue;
 
@@ -529,15 +529,15 @@ class View {
 
     this.colorScales = {};
 
-    this.controller.configuration.edgeTypes.forEach(type=>{
+    this.controller.configuration.edgeTypes.forEach(type => {
       // calculate the max
-      let extent = [0,this.controller.model.maxTracker[type]]
+      let extent = [0, this.controller.model.maxTracker[type]]
       console.log(extent);
       // set up scale
-      let scale = d3.scaleSqrt().domain(extent).range(["white",this.controller.configuration.style.edgeColors[type]])
+      let scale = d3.scaleSqrt().domain(extent).range(["white", this.controller.configuration.style.edgeColors[type]])
       // store scales
       this.colorScales[type] = scale;
-      console.log(type,this.colorScales[type].domain(),this.colorScales[type].range());
+      console.log(type, this.colorScales[type].domain(), this.colorScales[type].range());
     })
 
     this.generateColorLegend();
@@ -550,24 +550,14 @@ class View {
       //.filter(d=>{return d.item >0})
       .attr("width", this.verticalScale.bandwidth())
       .attr("height", this.verticalScale.bandwidth())
-      //.style("fill", d => this.colorScales(d.z))
-      .style("fill", d => {
-        // choose between replies retweets or mentions
-        // filter to only see some interaction edgeTypes
+      .style("fill", 'white')
+    squares
 
-        if (d.reply !== 0) {
-          console.log(d);
-          return this.colorScales["reply"](d.reply);
-        } else if (d.retweet !== 0) {
-          return this.colorScales["retweet"](d.retweet);
-        } else if (d.mentions !== 0) {
-          return this.colorScales["mentions"](d.mentions);
-        } else if (d.z > 3) {
-          return "pink";
-        }
-      })
       .on("mouseover", mouseoverCell)
       .on("mouseout", mouseoutCell);
+    // color squares
+    this.setSquareColors('all');
+
     squares
       .filter(d => d.z == 0)
       .style("fill-opacity", 0);
@@ -680,14 +670,14 @@ class View {
       .attr("text-anchor", "end")
       .style("font-size", 7.5 + "px")
       .text((d, i) => this.nodes[i].screen_name)
-      .on('click', (d,i,nodes) => {
-        d3.select(nodes[i]).classed('selected',(data)=>{
-          console.log(data,data[0]);
+      .on('click', (d, i, nodes) => {
+        d3.select(nodes[i]).classed('selected', (data) => {
+          console.log(data, data[0]);
           return !this.controller.configuration.state.selectedNodes.includes(data[0].rowid)
         });
 
         this.selectNode(d[0].rowid);
-       });
+      });
 
 
     this.edgeColumns.append("text")
@@ -697,9 +687,9 @@ class View {
       .attr("text-anchor", "start")
       .style("font-size", 7.5 + "px")
       .text((d, i) => this.nodes[i].screen_name)
-      .on('click', (d,index,nodes) => {
+      .on('click', (d, index, nodes) => {
 
-        d3.select(nodes[index]).classed('selected',!this.controller.configuration.state.columnSelectedNodes.includes(d[index].rowid));
+        d3.select(nodes[index]).classed('selected', !this.controller.configuration.state.columnSelectedNodes.includes(d[index].rowid));
 
         console.log(d[index].rowid);
         this.selectColumnNode(d[index].rowid);
@@ -729,81 +719,150 @@ class View {
     return arr;
   }
 
-  generateColorLegend(){
-    let yOffset = 10;
-    let xOffset = 10;
-    let rectWidth = 25
-    let rectHeight = 10;
-    let legendWidth = 200;
-    for(let type in this.colorScales){
+  setSquareColors(type) {
+    let squares = d3.selectAll('.cell')
+      .transition()
+      .duration(500);
 
-      let scale = this.colorScales[type];
-      console.log(scale)
-      let extent = scale.domain();
-      console.log(extent,"translate("+xOffset+","+yOffset+")");
-      let sampleNumbers = this.linspace(extent[0],extent[1],5);
-      console.log(sampleNumbers);
-      let svg = d3.select('#legends').append("g")
-        .attr("id", "legendLinear" + type)
-        .attr("transform", (d,i)=>"translate("+xOffset+","+yOffset+")")
-        .on('click',()=>{
-          console.log(type);
-          alert(type);
+
+    if (type == 'all') {
+      console.log(this.colorScales, squares);
+      squares
+        .style("fill", (d: any) => {
+          if (d.reply !== 0) {
+            return this.colorScales["reply"](d.reply);
+          } else if (d.retweet !== 0) {
+            return this.colorScales["retweet"](d.retweet);
+          } else if (d.mentions !== 0) {
+            return this.colorScales["mentions"](d.mentions);
+          } else if (d.z > 3) {
+            return "pink";
+          }
+        })
+        .filter(d => {return d.reply !== 0 || d.retweet !== 0 || d.mentions !== 0)
+          .style("fill-opacity", (d)=>{
+            return (d.reply !== 0 || d.retweet !== 0 || d.mentions !== 0)? 1:0;
+          });
+    } else if (type == "reply") {
+      squares.style("fill", (d: any) => {
+        if (d.reply !== 0) {
+          return this.colorScales["reply"](d.reply);
+        }
+      })
+        .style("fill-opacity", (d)=>{
+          return d.reply !== 0? 1:0;
         });
 
 
-      svg.append('rect')
-        .attr('stroke','gray')
-        .attr('stroke-width',1)
-        .attr('width',6*rectWidth)
-        .attr('height',55)
-        .attr('fill-opacity',0)
-        .attr('x',0)
-        .attr('y',-9)
-        .attr('ry',2)
-        .attr('rx',2)
-
-      svg.append('text')
-        .attr('x',6*rectWidth/2)
-        .attr('y',5)
-        .attr('text-anchor','middle')
-        .text("Number of "+type)
-
-      let groups = svg.selectAll('rect')
-          .data(sampleNumbers)
-          .enter()
-          .append('g')
-          .attr('transform',(d,i)=>'translate('+i*(rectWidth+5)+','+10+')')
-
-      groups
-          .append('rect')
-          .attr('width',rectWidth)
-          .attr('height',rectHeight)
-          .attr('fill',(d)=>{
-            console.log(d);
-            return scale(d);
-          })
-          .attr('stroke',(d)=>{
-            return d==0 ? '#bbb':'white';
-          })
-
-     groups
-        .append('text')
-        .attr('x',rectWidth/2)
-        .attr('y',30)
-        .attr('text-anchor','middle')
-        .text(d=>{
-            return Math.round(d);
-          })
-
-
-      xOffset += legendWidth;
-;
-
-
-
+    } else if (type == "retweet") {
+      squares.style("fill", (d: any) => {
+        if (d.retweet !== 0) {
+          return this.colorScales["retweet"](d.retweet);
+        }
+      })
+      .style("fill-opacity", (d)=>{
+        return d.retweet !== 0? 1:0;
+      });
+    } else if (type == "mentions") {
+      squares.style("fill", (d: any) => {
+        if (d.mentions !== 0) {
+          return this.colorScales["mentions"](d.mentions);
+        }
+      })
+      .style("fill-opacity", (d)=>{
+        return d.mentions !== 0? 1:0;
+      });
     }
   }
+
+
+generateColorLegend(){
+  let yOffset = 10;
+  let xOffset = 10;
+  let rectWidth = 25
+  let rectHeight = 10;
+  let legendWidth = 200;
+  for (let type in this.colorScales) {
+
+    let scale = this.colorScales[type];
+    console.log(scale)
+    let extent = scale.domain();
+    console.log(extent, "translate(" + xOffset + "," + yOffset + ")");
+    let sampleNumbers = this.linspace(extent[0], extent[1], 5);
+    console.log(sampleNumbers);
+    let svg = d3.select('#legends').append("g")
+      .attr("id", "legendLinear" + type)
+      .attr("transform", (d, i) => "translate(" + xOffset + "," + yOffset + ")")
+      .on('click', (d,i,nodes) => {
+        if (this.controller.configuration.interaction.selectEdgeType == true) {
+          let edgeType = this.controller.configuration.state.selectedEdgeType == type ? 'all' : type;
+          this.controller.configuration.state.selectedEdgeType = edgeType;
+          this.setSquareColors(edgeType);
+          console.log(nodes[i]);
+          if(edgeType == "all"){
+            d3.selectAll('.selectedEdgeType').classed('selectedEdgeType',false);
+          } else {
+            d3.selectAll('.selectedEdgeType').classed('selectedEdgeType',false);
+            console.log(d3.selectAll('#legendLinear' + type).select('.edgeLegendBorder').classed('selectedEdgeType',true));
+          }
+        }
+      });
+
+
+    svg.append('rect')
+      .classed('edgeLegendBorder',true)
+      .attr('stroke', 'gray')
+      .attr('stroke-width', 1)
+      .attr('width', 6 * rectWidth)
+      .attr('height', 55)
+      .attr('fill-opacity', 0)
+      .attr('x', 0)
+      .attr('y', -9)
+      .attr('ry', 2)
+      .attr('rx', 2)
+
+    svg.append('text')
+      .attr('x', 6 * rectWidth / 2)
+      .attr('y', 5)
+      .attr('text-anchor', 'middle')
+      .text("Number of " + type)
+
+    let groups = svg.selectAll('rect')
+      .data(sampleNumbers)
+      .enter()
+      .append('g')
+      .attr('transform', (d, i) => 'translate(' + i * (rectWidth + 5) + ',' + 10 + ')')
+
+    groups
+      .append('rect')
+      .attr('width', rectWidth)
+      .attr('height', rectHeight)
+      .attr('fill', (d) => {
+        console.log(d);
+        return scale(d);
+      })
+      .attr('stroke', (d) => {
+        return d == 0 ? '#bbb' : 'white';
+      })
+
+    groups
+      .append('text')
+      .attr('x', rectWidth / 2)
+      .attr('y', 30)
+      .attr('text-anchor', 'middle')
+      .text(d => {
+        return Math.round(d);
+      })
+
+
+    xOffset += legendWidth;
+
+
+
+
+  }
+}
+
 
 
 
@@ -918,8 +977,8 @@ class View {
 
   selectNode(nodeID: string) {
     let index = this.controller.configuration.state.selectedNodes.indexOf(nodeID)
-    if(index > -1){
-      this.controller.configuration.state.selectedNodes.splice(index,1);
+    if (index > -1) {
+      this.controller.configuration.state.selectedNodes.splice(index, 1);
     } else {
       this.controller.configuration.state.selectedNodes.push(nodeID);
     }
@@ -930,7 +989,7 @@ class View {
     let topoRow = d3.selectAll('#highlight' + 'Topo' + 'Row' + nodeID);
     topoRow
       .classed('selected', !topoRow.classed('selected'));
-    console.log(attrRow,topoRow)
+    console.log(attrRow, topoRow)
   }
 
   /**
@@ -1051,7 +1110,7 @@ class View {
       .delay((d, i) => { return this.verticalScale(i) * 4; })
       .attr("transform", (d, i) => { return "translate(" + this.verticalScale(i) + ")rotate(-90)"; });*/
   }
-  private columnNames: {};
+  private columnNames: { };
   /**
    * [initalizeAttributes description]
    * @return [description]
@@ -1164,7 +1223,7 @@ class View {
     // Calculate Column Scale
     let columnRange = []
     let xRange = 0;
-    let columnWidth  = 450/columns.length;
+    let columnWidth = 450 / columns.length;
 
 
 
@@ -1204,36 +1263,36 @@ class View {
     this.columnScale.range(columnRange);
 
     for (let [column, scale] of Object.entries(attributeScales)) {
-      if(column == "influential" || column == "original"){
+      if (column == "influential" || column == "original") {
         let circs = this.attributes.append("g")
           .attr("transform", "translate(" + this.columnScale(column) + "," + -15 + ")");
         let circ1 = circs
           .append('g')
-            .attr('transform','translate(10,5)')
+          .attr('transform', 'translate(10,5)')
         circ1
-            .append('circle')
-              .attr('cx',0)
-              .attr('cy',-20)
-              .attr('fill',"green")
-              .attr('r',4)
+          .append('circle')
+          .attr('cx', 0)
+          .attr('cy', -20)
+          .attr('fill', "green")
+          .attr('r', 4)
 
         circ1
-            .append('text')
-              .text('T')
-              .attr('text-anchor','middle')
+          .append('text')
+          .text('T')
+          .attr('text-anchor', 'middle')
         let circs2 = circs
           .append('g')
-            .attr('transform','translate(35,5)')
+          .attr('transform', 'translate(35,5)')
         circs2
-            .append('circle')
-              .attr('cx',0)
-              .attr('cy',-20)
-              .attr('fill',"brown")
-              .attr('r',4)
-          circs2
-            .append('text')
-              .text('F')
-              .attr('text-anchor','middle')
+          .append('circle')
+          .attr('cx', 0)
+          .attr('cy', -20)
+          .attr('fill', "brown")
+          .attr('r', 4)
+        circs2
+          .append('text')
+          .text('F')
+          .attr('text-anchor', 'middle')
         console.log(circs);
         continue;
       }
@@ -1259,16 +1318,16 @@ class View {
     columns.forEach((c) => {
       let columnPosition = this.columnScale(c);
 
-      if(c == "influential" || c == "original"){
+      if (c == "influential" || c == "original") {
         this.attributeRows
           .append('circle')
-            .attr('cx',columnPosition + columnWidth/2)
-            .attr('cy',this.verticalScale.bandwidth()/2)
-            .attr('fill',(d)=>{
-              console.log(d);
-              return (d[c] ? "green":"brown");
-            })
-            .attr('r',2.5);
+          .attr('cx', columnPosition + columnWidth / 2)
+          .attr('cy', this.verticalScale.bandwidth() / 2)
+          .attr('fill', (d) => {
+            console.log(d);
+            return (d[c] ? "green" : "brown");
+          })
+          .attr('r', 2.5);
         return;
       }
 

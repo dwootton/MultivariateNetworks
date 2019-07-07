@@ -12,7 +12,8 @@
     "highlightedNodes": {},
     "permamentlySelectedNodes": [],
     "hoveredNodes": [],
-    "sortings":[]
+    "sortings":[],
+    "selectedEdgeType":"all"
   },
   "sortKey":"screen_name",
   "initalKey":"screen_name",
@@ -23,7 +24,8 @@
     "edgeTooltip": false,
     "draggableNodes": null,
     "multiNodeSelection": true,
-    "multiEdgeSelection": null
+    "multiEdgeSelection": null,
+    "selectEdgeType":true
   },
   "style": {
     "nodeIsRect": null,

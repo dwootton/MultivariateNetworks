@@ -450,26 +450,12 @@ var View = /** @class */ (function () {
             //.filter(d=>{return d.item >0})
             .attr("width", this.verticalScale.bandwidth())
             .attr("height", this.verticalScale.bandwidth())
-            //.style("fill", d => this.colorScales(d.z))
-            .style("fill", function (d) {
-            // choose between replies retweets or mentions
-            // filter to only see some interaction edgeTypes
-            if (d.reply !== 0) {
-                console.log(d);
-                return _this.colorScales["reply"](d.reply);
-            }
-            else if (d.retweet !== 0) {
-                return _this.colorScales["retweet"](d.retweet);
-            }
-            else if (d.mentions !== 0) {
-                return _this.colorScales["mentions"](d.mentions);
-            }
-            else if (d.z > 3) {
-                return "pink";
-            }
-        })
+            .style("fill", 'white');
+        squares
             .on("mouseover", mouseoverCell)
             .on("mouseout", mouseoutCell);
+        // color squares
+        this.setSquareColors('all');
         squares
             .filter(function (d) { return d.z == 0; })
             .style("fill-opacity", 0);
@@ -609,7 +595,66 @@ var View = /** @class */ (function () {
         }
         return arr;
     };
+    View.prototype.setSquareColors = function (type) {
+        var _this = this;
+        var squares = d3.selectAll('.cell')
+            .transition()
+            .duration(500);
+        if (type == 'all') {
+            console.log(this.colorScales, squares);
+            squares
+                .style("fill", function (d) {
+                if (d.reply !== 0) {
+                    return _this.colorScales["reply"](d.reply);
+                }
+                else if (d.retweet !== 0) {
+                    return _this.colorScales["retweet"](d.retweet);
+                }
+                else if (d.mentions !== 0) {
+                    return _this.colorScales["mentions"](d.mentions);
+                }
+                else if (d.z > 3) {
+                    return "pink";
+                }
+            })
+                .filter(function (d) { return d.reply !== 0 || d.retweet !== 0 || d.mentions !== 0; })
+                .style("fill-opacity", function (d) {
+                return (d.reply !== 0 || d.retweet !== 0 || d.mentions !== 0) ? 1 : 0;
+            });
+        }
+        else if (type == "reply") {
+            squares.style("fill", function (d) {
+                if (d.reply !== 0) {
+                    return _this.colorScales["reply"](d.reply);
+                }
+            })
+                .style("fill-opacity", function (d) {
+                return d.reply !== 0 ? 1 : 0;
+            });
+        }
+        else if (type == "retweet") {
+            squares.style("fill", function (d) {
+                if (d.retweet !== 0) {
+                    return _this.colorScales["retweet"](d.retweet);
+                }
+            })
+                .style("fill-opacity", function (d) {
+                return d.retweet !== 0 ? 1 : 0;
+            });
+        }
+        else if (type == "mentions") {
+            squares.style("fill", function (d) {
+                if (d.mentions !== 0) {
+                    return _this.colorScales["mentions"](d.mentions);
+                }
+            })
+                .style("fill-opacity", function (d) {
+                return d.mentions !== 0 ? 1 : 0;
+            });
+        }
+    };
     View.prototype.generateColorLegend = function () {
+        var _this = this;
         var yOffset = 10;
         var xOffset = 10;
         var rectWidth = 25;
@@ -625,11 +670,23 @@ var View = /** @class */ (function () {
             var svg = d3.select('#legends').append("g")
                 .attr("id", "legendLinear" + type)
                 .attr("transform", function (d, i) { return "translate(" + xOffset + "," + yOffset + ")"; })
-                .on('click', function () {
-                console.log(type);
-                alert(type);
+                .on('click', function (d, i, nodes) {
+                if (_this.controller.configuration.interaction.selectEdgeType == true) {
+                    var edgeType = _this.controller.configuration.state.selectedEdgeType == type ? 'all' : type;
+                    _this.controller.configuration.state.selectedEdgeType = edgeType;
+                    _this.setSquareColors(edgeType);
+                    console.log(nodes[i]);
+                    if (edgeType == "all") {
+                        d3.selectAll('.selectedEdgeType').classed('selectedEdgeType', false);
+                    }
+                    else {
+                        d3.selectAll('.selectedEdgeType').classed('selectedEdgeType', false);
+                        console.log(d3.selectAll('#legendLinear' + type).select('.edgeLegendBorder').classed('selectedEdgeType', true));
+                    }
+                }
             });
             svg.append('rect')
+                .classed('edgeLegendBorder', true)
                 .attr('stroke', 'gray')
                 .attr('stroke-width', 1)
                 .attr('width', 6 * rectWidth)
@@ -669,7 +726,6 @@ var View = /** @class */ (function () {
                 return Math.round(d);
             });
             xOffset += legendWidth;
-            ;
         };
         var this_1 = this;
         for (var type in this.colorScales) {
