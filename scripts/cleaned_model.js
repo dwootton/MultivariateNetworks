@@ -566,7 +566,8 @@ var View = /** @class */ (function () {
         });
         this.edgeColumns.append("text")
             .attr("class", "label")
-            .attr("y", 0)
+            .attr("y", 3)
+            .attr('x', 2)
             .attr("dy", ".32em")
             .attr("text-anchor", "start")
             .style("font-size", 7.5 + "px")
