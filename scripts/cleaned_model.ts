@@ -747,6 +747,8 @@ class View {
       squares.style("fill", (d: any) => {
         if (d.reply !== 0) {
           return this.colorScales["reply"](d.reply);
+        } else {
+          return "white";
         }
       })
         .style("fill-opacity", (d)=>{
@@ -758,6 +760,8 @@ class View {
       squares.style("fill", (d: any) => {
         if (d.retweet !== 0) {
           return this.colorScales["retweet"](d.retweet);
+        }else {
+          return "white";
         }
       })
       .style("fill-opacity", (d)=>{
@@ -767,6 +771,8 @@ class View {
       squares.style("fill", (d: any) => {
         if (d.mentions !== 0) {
           return this.colorScales["mentions"](d.mentions);
+        }else {
+          return "white";
         }
       })
       .style("fill-opacity", (d)=>{
@@ -807,13 +813,13 @@ generateColorLegend(){
           }
         }
       });
-
+    let boxWidth = 6* rectWidth + 15
 
     svg.append('rect')
       .classed('edgeLegendBorder',true)
       .attr('stroke', 'gray')
       .attr('stroke-width', 1)
-      .attr('width', 6 * rectWidth)
+      .attr('width',boxWidth)
       .attr('height', 55)
       .attr('fill-opacity', 0)
       .attr('x', 0)
@@ -821,17 +827,25 @@ generateColorLegend(){
       .attr('ry', 2)
       .attr('rx', 2)
 
-    svg.append('text')
-      .attr('x', 6 * rectWidth / 2)
-      .attr('y', 5)
-      .attr('text-anchor', 'middle')
-      .text("Number of " + type)
+    let pluralType = type;
 
-    let groups = svg.selectAll('rect')
+    if(pluralType == "retweet"){
+      pluralType = "retweets";
+    } else if(pluralType == "reply"){
+      pluralType = "replies";
+    }
+
+    svg.append('text')
+      .attr('x',boxWidth / 2)
+      .attr('y', 8)
+      .attr('text-anchor', 'middle')
+      .text("Number of " + pluralType)
+
+    let groups = svg.selectAll('g')
       .data(sampleNumbers)
       .enter()
       .append('g')
-      .attr('transform', (d, i) => 'translate(' + i * (rectWidth + 5) + ',' + 10 + ')')
+      .attr('transform', (d, i) => 'translate(' + (10 + i * (rectWidth + 5)) + ',' + 15 + ')')
 
     groups
       .append('rect')
@@ -848,7 +862,7 @@ generateColorLegend(){
     groups
       .append('text')
       .attr('x', rectWidth / 2)
-      .attr('y', 30)
+      .attr('y', 25)
       .attr('text-anchor', 'middle')
       .text(d => {
         return Math.round(d);
@@ -1116,10 +1130,10 @@ generateColorLegend(){
    * @return [description]
    */
   initalizeAttributes() {
-    this.attributeWidth = 600 - this.margins.left - this.margins.right;
+    this.attributeWidth = 525 - this.margins.left - this.margins.right;
     this.attributeHeight = 600 - this.margins.top - this.margins.bottom;
 
-    let width = this.attributeWidth + this.margins.left + this.margins.right;
+    let width = this.attributeWidth + this.margins.left + this.margins.right + 75;
     let height = this.attributeHeight + this.margins.top + this.margins.bottom;
 
     this.attributes = d3.select('#attributes').append("svg")
@@ -1269,12 +1283,13 @@ generateColorLegend(){
         let circ1 = circs
           .append('g')
           .attr('transform', 'translate(10,5)')
+
         circ1
           .append('circle')
           .attr('cx', 0)
           .attr('cy', -20)
-          .attr('fill', "green")
-          .attr('r', 4)
+          .attr('fill', "#68AA73")
+          .attr('r', 4);
 
         circ1
           .append('text')
@@ -1287,7 +1302,7 @@ generateColorLegend(){
           .append('circle')
           .attr('cx', 0)
           .attr('cy', -20)
-          .attr('fill', "brown")
+          .attr('fill', "#A88E69")
           .attr('r', 4)
         circs2
           .append('text')
@@ -1325,7 +1340,7 @@ generateColorLegend(){
           .attr('cy', this.verticalScale.bandwidth() / 2)
           .attr('fill', (d) => {
             console.log(d);
-            return (d[c] ? "green" : "brown");
+            return (d[c] ? "#68AA73" : "#A88E69");
           })
           .attr('r', 2.5);
         return;
@@ -1395,7 +1410,7 @@ generateColorLegend(){
       .classed('header', true)
       .attr('y', -45)
       .attr('x', (d) => this.columnScale(d) + barMargin.left)
-      .style('font-size', '12px')
+      .style('font-size', '11px')
       .attr('text-anchor', 'left')
       .text((d, i) => {
         return this.columnNames[d];

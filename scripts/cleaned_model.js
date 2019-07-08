@@ -627,6 +627,9 @@ var View = /** @class */ (function () {
                 if (d.reply !== 0) {
                     return _this.colorScales["reply"](d.reply);
                 }
+                else {
+                    return "white";
+                }
             })
                 .style("fill-opacity", function (d) {
                 return d.reply !== 0 ? 1 : 0;
@@ -637,6 +640,9 @@ var View = /** @class */ (function () {
                 if (d.retweet !== 0) {
                     return _this.colorScales["retweet"](d.retweet);
                 }
+                else {
+                    return "white";
+                }
             })
                 .style("fill-opacity", function (d) {
                 return d.retweet !== 0 ? 1 : 0;
@@ -646,6 +652,9 @@ var View = /** @class */ (function () {
             squares.style("fill", function (d) {
                 if (d.mentions !== 0) {
                     return _this.colorScales["mentions"](d.mentions);
+                }
+                else {
+                    return "white";
                 }
             })
                 .style("fill-opacity", function (d) {
@@ -685,27 +694,35 @@ var View = /** @class */ (function () {
                     }
                 }
             });
+            var boxWidth = 6 * rectWidth + 15;
             svg.append('rect')
                 .classed('edgeLegendBorder', true)
                 .attr('stroke', 'gray')
                 .attr('stroke-width', 1)
-                .attr('width', 6 * rectWidth)
+                .attr('width', boxWidth)
                 .attr('height', 55)
                 .attr('fill-opacity', 0)
                 .attr('x', 0)
                 .attr('y', -9)
                 .attr('ry', 2)
                 .attr('rx', 2);
+            var pluralType = type;
+            if (pluralType == "retweet") {
+                pluralType = "retweets";
+            }
+            else if (pluralType == "reply") {
+                pluralType = "replies";
+            }
             svg.append('text')
-                .attr('x', 6 * rectWidth / 2)
-                .attr('y', 5)
+                .attr('x', boxWidth / 2)
+                .attr('y', 8)
                 .attr('text-anchor', 'middle')
-                .text("Number of " + type);
-            var groups = svg.selectAll('rect')
+                .text("Number of " + pluralType);
+            var groups = svg.selectAll('g')
                 .data(sampleNumbers)
                 .enter()
                 .append('g')
-                .attr('transform', function (d, i) { return 'translate(' + i * (rectWidth + 5) + ',' + 10 + ')'; });
+                .attr('transform', function (d, i) { return 'translate(' + (10 + i * (rectWidth + 5)) + ',' + 15 + ')'; });
             groups
                 .append('rect')
                 .attr('width', rectWidth)
@@ -720,7 +737,7 @@ var View = /** @class */ (function () {
             groups
                 .append('text')
                 .attr('x', rectWidth / 2)
-                .attr('y', 30)
+                .attr('y', 25)
                 .attr('text-anchor', 'middle')
                 .text(function (d) {
                 return Math.round(d);
@@ -947,9 +964,9 @@ var View = /** @class */ (function () {
      */
     View.prototype.initalizeAttributes = function () {
         var _this = this;
-        this.attributeWidth = 600 - this.margins.left - this.margins.right;
+        this.attributeWidth = 525 - this.margins.left - this.margins.right;
         this.attributeHeight = 600 - this.margins.top - this.margins.bottom;
-        var width = this.attributeWidth + this.margins.left + this.margins.right;
+        var width = this.attributeWidth + this.margins.left + this.margins.right + 75;
         var height = this.attributeHeight + this.margins.top + this.margins.bottom;
         this.attributes = d3.select('#attributes').append("svg")
             .attr("viewBox", "0 0 " + width + " " + height + "")
@@ -1068,7 +1085,7 @@ var View = /** @class */ (function () {
                     .append('circle')
                     .attr('cx', 0)
                     .attr('cy', -20)
-                    .attr('fill', "green")
+                    .attr('fill', "#68AA73")
                     .attr('r', 4);
                 circ1
                     .append('text')
@@ -1081,7 +1098,7 @@ var View = /** @class */ (function () {
                     .append('circle')
                     .attr('cx', 0)
                     .attr('cy', -20)
-                    .attr('fill', "brown")
+                    .attr('fill', "#A88E69")
                     .attr('r', 4);
                 circs2
                     .append('text')
@@ -1114,7 +1131,7 @@ var View = /** @class */ (function () {
                     .attr('cy', _this.verticalScale.bandwidth() / 2)
                     .attr('fill', function (d) {
                     console.log(d);
-                    return (d[c] ? "green" : "brown");
+                    return (d[c] ? "#68AA73" : "#A88E69");
                 })
                     .attr('r', 2.5);
                 return;
@@ -1169,7 +1186,7 @@ var View = /** @class */ (function () {
             .classed('header', true)
             .attr('y', -45)
             .attr('x', function (d) { return _this.columnScale(d) + barMargin.left; })
-            .style('font-size', '12px')
+            .style('font-size', '11px')
             .attr('text-anchor', 'left')
             .text(function (d, i) {
             return _this.columnNames[d];
