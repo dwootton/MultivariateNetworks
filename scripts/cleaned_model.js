@@ -154,6 +154,7 @@ var Model = /** @class */ (function () {
                 }
             }
             console.log("Max", _this.maxTracker);
+            _this.maxTracker = { 'reply': 3, 'retweet': 3, 'mentions': 2 };
             /* could be used for varying edge types */
             _this.matrix[_this.idMap[link.source]][_this.idMap[link.target]].z += addValue;
             _this.matrix[_this.idMap[link.source]].count += 1;
@@ -429,36 +430,77 @@ var View = /** @class */ (function () {
             // select node and turn orange ish
             // highlight other nodes (add jumps?)
         });
-        this.colorScales = {};
+        this.edgeScales = {};
         this.controller.configuration.edgeTypes.forEach(function (type) {
             // calculate the max
             var extent = [0, _this.controller.model.maxTracker[type]];
             console.log(extent);
             // set up scale
-            var scale = d3.scaleSqrt().domain(extent).range(["white", _this.controller.configuration.style.edgeColors[type]]);
+            var scale = d3.scaleLinear().domain(extent).range(["white", _this.controller.configuration.style.edgeColors[type]]);
             // store scales
-            _this.colorScales[type] = scale;
-            console.log(type, _this.colorScales[type].domain(), _this.colorScales[type].range());
+            _this.edgeScales[type] = scale;
+            //console.log(type, this.edgeScales[type].domain(), this.edgeScales[type].range().clamp());
         });
         this.generateColorLegend();
-        console.log(this.colorScales);
-        var squares = this.edgeRows.selectAll(".cell")
+        console.log(this.edgeScales);
+        var cells = this.edgeRows.selectAll(".cell")
             .data(function (d) { return d; /*.filter(item => item.z > 0)*/ })
-            .enter().append("rect")
-            .attr("class", "cell")
-            .attr("x", function (d) { return _this.verticalScale(d.x); })
-            //.filter(d=>{return d.item >0})
-            .attr("width", this.verticalScale.bandwidth())
-            .attr("height", this.verticalScale.bandwidth())
-            .style("fill", 'white');
-        squares
+            .enter().append('g')
+            .attr("class", "cell");
+        if (this.controller.configuration.nestedBars) {
+            // bind squars to cells for the mouse over effect
+            cells
+                .append("rect")
+                .attr("x", function (d) { return _this.verticalScale(d.x); })
+                .attr('height', this.verticalScale.bandwidth())
+                .attr('width', this.verticalScale.bandwidth())
+                .attr('fill-opacity', 0);
+            var dividers_1 = this.controller.configuration.edgeTypes.length;
+            dividers_1 = dividers_1 == 0 ? 1 : dividers_1; // if dividers = 0, set to 1  throw an error?
+            var squares = cells;
+            var _loop_1 = function (index) {
+                var type = this_1.controller.configuration.edgeTypes[index];
+                console.log(type);
+                var scale = this_1.edgeScales[type];
+                scale.range([0, this_1.verticalScale.bandwidth()]);
+                scale.clamp(true);
+                cells
+                    .filter(function (d) {
+                    return d[_this.controller.configuration.edgeTypes[index]] !== 0;
+                })
+                    .append("rect")
+                    .attr('x', function (d, i) { return _this.verticalScale(d.x) + index * _this.verticalScale.bandwidth() / dividers_1; })
+                    .attr('y', function (d) {
+                    return _this.verticalScale.bandwidth() - scale(d[type]);
+                })
+                    .attr('height', function (d) { return _this.edgeScales[type](d[type]); })
+                    .attr('width', this_1.verticalScale.bandwidth() / dividers_1)
+                    .attr('fill', this_1.controller.configuration.style.edgeColors[type]);
+            };
+            var this_1 = this;
+            for (var index = 0; index < dividers_1; index++) {
+                _loop_1(index);
+            }
+            // determine scales for height
+            // append 3 bars of different heights, filtering out 0's
+        }
+        else {
+            var squares = cells
+                .append("rect")
+                .attr("x", function (d) { return _this.verticalScale(d.x); })
+                //.filter(d=>{return d.item >0})
+                .attr("width", this.verticalScale.bandwidth())
+                .attr("height", this.verticalScale.bandwidth())
+                .style("fill", 'white');
+            squares
+                .filter(function (d) { return d.z == 0; })
+                .style("fill-opacity", 0);
+            this.setSquareColors('all');
+        }
+        cells
             .on("mouseover", mouseoverCell)
             .on("mouseout", mouseoutCell);
         // color squares
-        this.setSquareColors('all');
-        squares
-            .filter(function (d) { return d.z == 0; })
-            .style("fill-opacity", 0);
         var that = this;
         function mouseoverCell(p) {
             /*let attrPrimaryRow = that.selectHighlight(p,"Row","Attr"),
@@ -598,21 +640,21 @@ var View = /** @class */ (function () {
     };
     View.prototype.setSquareColors = function (type) {
         var _this = this;
-        var squares = d3.selectAll('.cell')
+        var squares = d3.selectAll('.cell').selectAll('rect')
             .transition()
             .duration(500);
         if (type == 'all') {
-            console.log(this.colorScales, squares);
+            console.log(this.edgeScales, squares);
             squares
                 .style("fill", function (d) {
                 if (d.reply !== 0) {
-                    return _this.colorScales["reply"](d.reply);
+                    return _this.edgeScales["reply"](d.reply);
                 }
                 else if (d.retweet !== 0) {
-                    return _this.colorScales["retweet"](d.retweet);
+                    return _this.edgeScales["retweet"](d.retweet);
                 }
                 else if (d.mentions !== 0) {
-                    return _this.colorScales["mentions"](d.mentions);
+                    return _this.edgeScales["mentions"](d.mentions);
                 }
                 else if (d.z > 3) {
                     return "pink";
@@ -626,7 +668,7 @@ var View = /** @class */ (function () {
         else if (type == "reply") {
             squares.style("fill", function (d) {
                 if (d.reply !== 0) {
-                    return _this.colorScales["reply"](d.reply);
+                    return _this.edgeScales["reply"](d.reply);
                 }
                 else {
                     return "white";
@@ -639,7 +681,7 @@ var View = /** @class */ (function () {
         else if (type == "retweet") {
             squares.style("fill", function (d) {
                 if (d.retweet !== 0) {
-                    return _this.colorScales["retweet"](d.retweet);
+                    return _this.edgeScales["retweet"](d.retweet);
                 }
                 else {
                     return "white";
@@ -652,7 +694,7 @@ var View = /** @class */ (function () {
         else if (type == "mentions") {
             squares.style("fill", function (d) {
                 if (d.mentions !== 0) {
-                    return _this.colorScales["mentions"](d.mentions);
+                    return _this.edgeScales["mentions"](d.mentions);
                 }
                 else {
                     return "white";
@@ -670,12 +712,12 @@ var View = /** @class */ (function () {
         var rectWidth = 25;
         var rectHeight = 10;
         var legendWidth = 200;
-        var _loop_1 = function (type) {
-            var scale = this_1.colorScales[type];
+        var _loop_2 = function (type) {
+            var scale = this_2.edgeScales[type];
             console.log(scale);
             var extent = scale.domain();
             console.log(extent, "translate(" + xOffset + "," + yOffset + ")");
-            var sampleNumbers = this_1.linspace(extent[0], extent[1], 5);
+            var sampleNumbers = this_2.linspace(extent[0], extent[1], 5);
             console.log(sampleNumbers);
             var svg = d3.select('#legends').append("g")
                 .attr("id", "legendLinear" + type)
@@ -745,9 +787,9 @@ var View = /** @class */ (function () {
             });
             xOffset += legendWidth;
         };
-        var this_1 = this;
-        for (var type in this.colorScales) {
-            _loop_1(type);
+        var this_2 = this;
+        for (var type in this.edgeScales) {
+            _loop_2(type);
         }
     };
     View.prototype.highlightRow = function (node) {
@@ -965,9 +1007,9 @@ var View = /** @class */ (function () {
      */
     View.prototype.initalizeAttributes = function () {
         var _this = this;
-        this.attributeWidth = 525 - this.margins.left - this.margins.right;
+        this.attributeWidth = 450 - this.margins.left - this.margins.right;
         this.attributeHeight = 600 - this.margins.top - this.margins.bottom;
-        var width = this.attributeWidth + this.margins.left + this.margins.right + 75;
+        var width = this.attributeWidth + this.margins.left + this.margins.right; //+ 75;
         var height = this.attributeHeight + this.margins.top + this.margins.bottom;
         this.attributes = d3.select('#attributes').append("svg")
             .attr("viewBox", "0 0 " + width + " " + height + "")
@@ -1011,7 +1053,7 @@ var View = /** @class */ (function () {
             .attr('id', function (d, i) {
             return "highlightAttrRow" + d.screen_name;
         })
-            .attr('width', this.attributeWidth)
+            .attr('width', width)
             .attr('height', this.verticalScale.bandwidth()) // end addition
             .attr("fill-opacity", 0)
             .on('mouseover', function (p) {

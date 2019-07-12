@@ -7,7 +7,7 @@
   stroke: blue !important;
   stroke-width: 2!important;
 }
-.container {
+.topocontainer {
   /*
   overflow: scroll;
   display:inline-block;
@@ -17,7 +17,22 @@
   float: left;
   display: inline-block;
   position: relative;
-  width: 50%;
+  width: 57.15%;
+  /*padding-bottom: 100%;*/
+  vertical-align: top;
+  overflow: hidden;
+}
+.attrcontainer {
+  /*
+  overflow: scroll;
+  display:inline-block;
+  height:600px;
+  width:600px;
+  */
+  float: left;
+  display: inline-block;
+  position: relative;
+  width: 42.85%;
   /*padding-bottom: 100%;*/
   vertical-align: top;
   overflow: hidden;
@@ -138,8 +153,8 @@ line {
 </div>
 
 <div id="interactiveFreeFormMain">
-  <div id="topology" class="container" height="700" width="700"> </div>
-  <div id="attributes" class="container" height="700" width="650"> </div>
+  <div id="topology" class="topocontainer" height="700" width="700"> </div>
+  <div id="attributes" class="attrcontainer" height="700" width="650"> </div>
 
 </div>
 <svg id ="legends" height = "60" width = "575"> </svg>

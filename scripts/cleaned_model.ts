@@ -194,6 +194,8 @@ class Model {
         }
       }
       console.log("Max", this.maxTracker);
+      this.maxTracker = { 'reply': 3, 'retweet': 3, 'mentions': 2 }
+
       /* could be used for varying edge types */
       this.matrix[this.idMap[link.source]][this.idMap[link.target]].z += addValue;
 
@@ -350,7 +352,7 @@ class View {
     // process links for neighbors?
 
   }
-  private colorScales: any;
+  private edgeScales: any;
   /**
    * Initalizes the edges view, renders SVG
    * @return None
@@ -527,40 +529,86 @@ class View {
       })
 
 
-    this.colorScales = {};
+    this.edgeScales = {};
 
     this.controller.configuration.edgeTypes.forEach(type => {
       // calculate the max
       let extent = [0, this.controller.model.maxTracker[type]]
       console.log(extent);
       // set up scale
-      let scale = d3.scaleSqrt().domain(extent).range(["white", this.controller.configuration.style.edgeColors[type]])
+      let scale = d3.scaleLinear().domain(extent).range(["white", this.controller.configuration.style.edgeColors[type]]);
+
       // store scales
-      this.colorScales[type] = scale;
-      console.log(type, this.colorScales[type].domain(), this.colorScales[type].range());
+      this.edgeScales[type] = scale;
+      //console.log(type, this.edgeScales[type].domain(), this.edgeScales[type].range().clamp());
     })
 
     this.generateColorLegend();
-    console.log(this.colorScales);
-    var squares = this.edgeRows.selectAll(".cell")
+    console.log(this.edgeScales);
+    var cells = this.edgeRows.selectAll(".cell")
       .data(d => { return d/*.filter(item => item.z > 0)*/ })
-      .enter().append("rect")
-      .attr("class", "cell")
+      .enter().append('g')
+
+
+      .attr("class", "cell");
+
+    if(this.controller.configuration.nestedBars){
+      // bind squars to cells for the mouse over effect
+      cells
+      .append("rect")
+      .attr("x", d => this.verticalScale(d.x))
+      .attr('height',this.verticalScale.bandwidth())
+      .attr('width',this.verticalScale.bandwidth())
+      .attr('fill-opacity',0);
+
+      let dividers = this.controller.configuration.edgeTypes.length;
+      dividers = dividers == 0 ? 1 : dividers; // if dividers = 0, set to 1  throw an error?
+      let squares = cells
+      for(let index = 0; index < dividers; index++){
+        let type = this.controller.configuration.edgeTypes[index]
+        console.log(type);
+        let scale = this.edgeScales[type];
+        scale.range([0,this.verticalScale.bandwidth()])
+        scale.clamp(true);
+
+        cells
+        .filter(d=>{
+          return d[this.controller.configuration.edgeTypes[index]] !== 0;
+        })
+        .append("rect")
+        .attr('x',(d,i)=>{return this.verticalScale(d.x) + index*this.verticalScale.bandwidth()/dividers})
+        .attr('y',(d)=>{
+          return this.verticalScale.bandwidth() - scale(d[type]);
+        })
+        .attr('height',d=>this.edgeScales[type](d[type]))
+        .attr('width',this.verticalScale.bandwidth()/dividers)
+        .attr('fill',this.controller.configuration.style.edgeColors[type])
+      }
+
+
+
+      // determine scales for height
+      // append 3 bars of different heights, filtering out 0's
+
+    } else {
+      let squares = cells
+      .append("rect")
       .attr("x", d => this.verticalScale(d.x))
       //.filter(d=>{return d.item >0})
       .attr("width", this.verticalScale.bandwidth())
       .attr("height", this.verticalScale.bandwidth())
       .style("fill", 'white')
-    squares
+      squares
+        .filter(d => d.z == 0)
+        .style("fill-opacity", 0);
+      this.setSquareColors('all');
+    }
 
+    cells
       .on("mouseover", mouseoverCell)
       .on("mouseout", mouseoutCell);
     // color squares
-    this.setSquareColors('all');
 
-    squares
-      .filter(d => d.z == 0)
-      .style("fill-opacity", 0);
 
     let that = this;
     function mouseoverCell(p) {
@@ -721,21 +769,21 @@ class View {
   }
 
   setSquareColors(type) {
-    let squares = d3.selectAll('.cell')
+    let squares = d3.selectAll('.cell').selectAll('rect')
       .transition()
       .duration(500);
 
 
     if (type == 'all') {
-      console.log(this.colorScales, squares);
+      console.log(this.edgeScales, squares);
       squares
         .style("fill", (d: any) => {
           if (d.reply !== 0) {
-            return this.colorScales["reply"](d.reply);
+            return this.edgeScales["reply"](d.reply);
           } else if (d.retweet !== 0) {
-            return this.colorScales["retweet"](d.retweet);
+            return this.edgeScales["retweet"](d.retweet);
           } else if (d.mentions !== 0) {
-            return this.colorScales["mentions"](d.mentions);
+            return this.edgeScales["mentions"](d.mentions);
           } else if (d.z > 3) {
             return "pink";
           }
@@ -747,7 +795,7 @@ class View {
     } else if (type == "reply") {
       squares.style("fill", (d: any) => {
         if (d.reply !== 0) {
-          return this.colorScales["reply"](d.reply);
+          return this.edgeScales["reply"](d.reply);
         } else {
           return "white";
         }
@@ -760,7 +808,7 @@ class View {
     } else if (type == "retweet") {
       squares.style("fill", (d: any) => {
         if (d.retweet !== 0) {
-          return this.colorScales["retweet"](d.retweet);
+          return this.edgeScales["retweet"](d.retweet);
         }else {
           return "white";
         }
@@ -771,7 +819,7 @@ class View {
     } else if (type == "mentions") {
       squares.style("fill", (d: any) => {
         if (d.mentions !== 0) {
-          return this.colorScales["mentions"](d.mentions);
+          return this.edgeScales["mentions"](d.mentions);
         }else {
           return "white";
         }
@@ -789,9 +837,9 @@ generateColorLegend(){
   let rectWidth = 25
   let rectHeight = 10;
   let legendWidth = 200;
-  for (let type in this.colorScales) {
+  for (let type in this.edgeScales) {
 
-    let scale = this.colorScales[type];
+    let scale = this.edgeScales[type];
     console.log(scale)
     let extent = scale.domain();
     console.log(extent, "translate(" + xOffset + "," + yOffset + ")");
@@ -1131,10 +1179,10 @@ generateColorLegend(){
    * @return [description]
    */
   initalizeAttributes() {
-    this.attributeWidth = 525 - this.margins.left - this.margins.right;
+    this.attributeWidth = 450 - this.margins.left - this.margins.right;
     this.attributeHeight = 600 - this.margins.top - this.margins.bottom;
 
-    let width = this.attributeWidth + this.margins.left + this.margins.right + 75;
+    let width = this.attributeWidth + this.margins.left + this.margins.right; //+ 75;
     let height = this.attributeHeight + this.margins.top + this.margins.bottom;
 
     this.attributes = d3.select('#attributes').append("svg")
@@ -1185,7 +1233,7 @@ generateColorLegend(){
       .attr('id', (d, i) => {
         return "highlightAttrRow" + d.screen_name;
       })
-      .attr('width', this.attributeWidth)
+      .attr('width', width)
       .attr('height', this.verticalScale.bandwidth()) // end addition
       .attr("fill-opacity", 0)
       .on('mouseover', (p: any) => {

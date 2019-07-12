@@ -3,8 +3,9 @@
   "directedGraph": "../public/data/network_small_directed_layout3.json",
   "undirectedGraph": "../public/data/network_small_undirected.json",
   "isDirected": false,
+  "nestedBars": true,
   "fixedPositions": null,
-  "edgeTypes": ["retweet","mentions","reply"],
+  "edgeTypes": ["retweet","reply"],
   "columns":["followers_count","query_tweet_count","friends_count","statuses_count","listed_count","favourites_count","count_followers_in_query","influential","original"],
   "state": {
     "selectedNodes": [],
