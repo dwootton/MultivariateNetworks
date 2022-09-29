@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
-    "d3": "^5.9.2",
+    "d3": "^7.6.1",
     "d3.js": "^0.0.2-security"
   },
   "devDependencies": {
